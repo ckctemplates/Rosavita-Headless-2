@@ -13,7 +13,8 @@ import favicon from '~/assets/favicon.svg';
 import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
 import resetStyles from '~/styles/reset.css?url';
 import appStyles from '~/styles/app.css?url';
-import {PageLayout} from './components/PageLayout';
+import rosavitaStyles from '~/styles/rosavita.css?url';
+import {RosavitaPageLayout} from './components/RosavitaPageLayout';
 
 /**
  * This is important to avoid re-fetching root queries on sub-navigations
@@ -152,6 +153,7 @@ export function Layout({children}) {
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <link rel="stylesheet" href={resetStyles}></link>
         <link rel="stylesheet" href={appStyles}></link>
+        <link rel="stylesheet" href={rosavitaStyles}></link>
         <Meta />
         <Links />
       </head>
@@ -178,9 +180,9 @@ export default function App() {
       shop={data.shop}
       consent={data.consent}
     >
-      <PageLayout {...data}>
+      <RosavitaPageLayout {...data}>
         <Outlet />
-      </PageLayout>
+      </RosavitaPageLayout>
     </Analytics.Provider>
   );
 }
