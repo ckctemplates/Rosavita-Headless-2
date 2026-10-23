@@ -175,11 +175,33 @@ const PRODUCT_CARD_FRAGMENT = `#graphql
     variants(first: 1) {
       nodes {
         id
+        title
+        availableForSale
         price {
           amount
           currencyCode
         }
-        availableForSale
+        compareAtPrice {
+          amount
+          currencyCode
+        }
+        image {
+          id
+          url
+          altText
+          width
+          height
+        }
+        selectedOptions {
+          name
+          value
+        }
+        product {
+          id
+          handle
+          title
+          vendor
+        }
       }
     }
     subtitle: metafield(namespace: "custom", key: "subtitle") {

@@ -21,11 +21,20 @@ export const CART_QUERY_FRAGMENT = `#graphql
       compareAtAmountPerQuantity {
         ...Money
       }
+      subtotalAmount {
+        ...Money
+      }
+    }
+    discountAllocations {
+      discountedAmount {
+        ...Money
+      }
     }
     merchandise {
       ... on ProductVariant {
         id
         availableForSale
+        quantityAvailable
         compareAtPrice {
           ...Money
         }
