@@ -2,14 +2,14 @@ import {useLoaderData, useSearchParams} from 'react-router';
 import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 import {SearchPageForm} from '~/components/SearchPageForm';
 import {SearchFilters} from '~/components/SearchFilters';
-import {SearchResultCard, SearchPageTile, UNAVAILABLE_PRODUCTS} from '~/components/SearchResultCard';
+import {SearchResultCard, SearchPageTile} from '~/components/SearchResultCard';
 import {getEmptyPredictiveSearchResult} from '~/lib/search';
 import {useRef, useState} from 'react';
 
 export const RESULTS_PER_PAGE = 24;
 export const SHOW_QUICK_ADD = true;
 export const MULTI_VARIANT_QUICK_ADD = 'first-available';
-export const UNAVAILABLE_PRODUCTS = 'LAST';
+export {UNAVAILABLE_PRODUCTS} from '~/components/SearchResultCard';
 
 export const meta = ({data}) => {
   const term = data?.term || '';
