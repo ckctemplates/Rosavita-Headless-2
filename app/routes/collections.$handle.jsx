@@ -1,96 +1,94 @@
-import {redirect, useLoaderData} from 'react-router';
-import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
-import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
+import {useLoaderData, redirect} from 'react-router';
+import {getPaginationVariables, Analytics, Pagination} from '@shopify/hydrogen';
+import {CollectionProductGrid} from '~/components/CollectionProductGrid';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
-import {ProductItem} from '~/components/ProductItem';
+
+const PRODUCTS_PER_PAGE = 24;
 
 /**
  * @type {Route.MetaFunction}
  */
 export const meta = ({data}) => {
-  return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
+  if (!data?.collection) return [{title: 'Collection | Rosavita'}];
+  const {title, description, seo} = data.collection;
+  const descriptionText = (seo?.description || description || '')
+    .replace(/<[^>]*>/g, '')
+    .trim()
+    .slice(0, 155);
+  return [
+    {title: `${title} | Rosavita`},
+    ...(descriptionText ? [{name: 'description', content: descriptionText}] : []),
+  ];
 };
 
 /**
  * @param {Route.LoaderArgs} args
  */
-export async function loader(args) {
-  // Start fetching non-critical data without blocking time to first byte
-  const deferredData = loadDeferredData(args);
-
-  // Await the critical data required to render initial state of the page
-  const criticalData = await loadCriticalData(args);
-
-  return {...deferredData, ...criticalData};
-}
-
-/**
- * Load data necessary for rendering content above the fold. This is the critical data
- * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
- * @param {Route.LoaderArgs}
- */
-async function loadCriticalData({context, params, request}) {
+export async function loader({context, params, request}) {
   const {handle} = params;
   const {storefront} = context;
-  const paginationVariables = getPaginationVariables(request, {
-    pageBy: 8,
-  });
 
   if (!handle) {
     throw redirect('/collections');
   }
 
-  const [{collection}] = await Promise.all([
-    storefront.query(COLLECTION_QUERY, {
-      variables: {handle, ...paginationVariables},
-      // Add other queries here, so that they are loaded in parallel
-    }),
-  ]);
+  const paginationVariables = getPaginationVariables(request, {
+    pageBy: PRODUCTS_PER_PAGE,
+  });
+
+  const {collection} = await storefront.query(COLLECTION_QUERY, {
+    variables: {handle, ...paginationVariables},
+  });
 
   if (!collection) {
-    throw new Response(`Collection ${handle} not found`, {
-      status: 404,
-    });
+    throw new Response(`Collection ${handle} not found`, {status: 404});
   }
 
-  // The API handle might be localized, so redirect to the localized handle
   redirectIfHandleIsLocalized(request, {handle, data: collection});
 
-  return {
-    collection,
-  };
-}
-
-/**
- * Load data for rendering content below the fold. This data is deferred and will be
- * fetched after the initial page load. If it's unavailable, the page should still 200.
- * Make sure to not throw any errors here, as it will cause the page to 500.
- * @param {Route.LoaderArgs}
- */
-function loadDeferredData({context}) {
-  return {};
+  return {collection};
 }
 
 export default function Collection() {
   /** @type {LoaderReturnData} */
   const {collection} = useLoaderData();
+  const products = collection.products;
+  const hasProducts = Boolean(products?.nodes?.length);
 
   return (
-    <div className="collection">
-      <h1>{collection.title}</h1>
-      <p className="collection-description">{collection.description}</p>
-      <PaginatedResourceSection
-        connection={collection.products}
-        resourcesClassName="products-grid"
-      >
-        {({node: product, index}) => (
-          <ProductItem
-            key={product.id}
-            product={product}
-            loading={index < 8 ? 'eager' : undefined}
-          />
+    <div className="rv-collection">
+      <div className="rv-collection__header">
+        <h1 className="rv-collection__title">{collection.title}</h1>
+      </div>
+
+      <div className="rv-collection__inner">
+        {hasProducts ? (
+          <Pagination connection={products}>
+            {({nodes, isLoading, NextLink}) => (
+              <>
+                <CollectionProductGrid products={nodes} />
+                {products.pageInfo?.hasNextPage ? (
+                  <div className="rv-collection__pagination">
+                    <NextLink className="rv-collection__loadmore">
+                      {isLoading ? 'LOADING...' : 'LOAD MORE'}
+                    </NextLink>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </Pagination>
+        ) : (
+          <div className="rv-collection__empty">
+            <p className="rv-collection__empty-text">
+              No products found in this collection.
+            </p>
+            <a href="/collections/all" className="rv-collection__empty-btn">
+              BROWSE ALL PRODUCTS
+            </a>
+          </div>
         )}
-      </PaginatedResourceSection>
+      </div>
+
       <Analytics.CollectionView
         data={{
           collection: {
@@ -103,36 +101,62 @@ export default function Collection() {
   );
 }
 
-const PRODUCT_ITEM_FRAGMENT = `#graphql
-  fragment MoneyProductItem on MoneyV2 {
+const PRODUCT_CARD_FRAGMENT = `#graphql
+  fragment MoneyCollectionProduct on MoneyV2 {
     amount
     currencyCode
   }
-  fragment ProductItem on Product {
+  fragment CollectionProduct on Product {
     id
     handle
     title
+    availableForSale
     featuredImage {
       id
-      altText
       url
+      altText
       width
       height
     }
     priceRange {
       minVariantPrice {
-        ...MoneyProductItem
+        ...MoneyCollectionProduct
       }
-      maxVariantPrice {
-        ...MoneyProductItem
+    }
+    compareAtPriceRange {
+      minVariantPrice {
+        ...MoneyCollectionProduct
       }
+    }
+    selectedOrFirstAvailableVariant(
+      selectedOptions: []
+      ignoreUnknownOptions: true
+      caseInsensitiveMatch: true
+    ) {
+      id
+      availableForSale
+      title
+      price {
+        ...MoneyCollectionProduct
+      }
+      compareAtPrice {
+        ...MoneyCollectionProduct
+      }
+      product {
+        title
+        handle
+      }
+      selectedOptions {
+        name
+        value
+      }
+      sku
     }
   }
 `;
 
-// NOTE: https://shopify.dev/docs/api/storefront/2022-04/objects/collection
 const COLLECTION_QUERY = `#graphql
-  ${PRODUCT_ITEM_FRAGMENT}
+  ${PRODUCT_CARD_FRAGMENT}
   query Collection(
     $handle: String!
     $country: CountryCode
@@ -147,20 +171,25 @@ const COLLECTION_QUERY = `#graphql
       handle
       title
       description
+      seo {
+        title
+        description
+      }
       products(
-        first: $first,
-        last: $last,
-        before: $startCursor,
+        first: $first
+        last: $last
+        before: $startCursor
         after: $endCursor
+        sortKey: COLLECTION_DEFAULT
       ) {
         nodes {
-          ...ProductItem
+          ...CollectionProduct
         }
         pageInfo {
           hasPreviousPage
           hasNextPage
-          endCursor
           startCursor
+          endCursor
         }
       }
     }
@@ -168,5 +197,5 @@ const COLLECTION_QUERY = `#graphql
 `;
 
 /** @typedef {import('./+types/collections.$handle').Route} Route */
-/** @typedef {import('storefrontapi.generated').ProductItemFragment} ProductItemFragment */
+/** @typedef {import('storefrontapi.generated').CollectionProductFragment} CollectionProductFragment */
 /** @typedef {import('@shopify/remix-oxygen').SerializeFrom<typeof loader>} LoaderReturnData */
