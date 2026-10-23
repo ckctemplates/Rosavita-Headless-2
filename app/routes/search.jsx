@@ -9,7 +9,7 @@ import {useRef, useState} from 'react';
 export const RESULTS_PER_PAGE = 24;
 export const SHOW_QUICK_ADD = true;
 export const MULTI_VARIANT_QUICK_ADD = 'first-available';
-export {UNAVAILABLE_PRODUCTS} from '~/components/SearchResultCard';
+export const UNAVAILABLE_PRODUCTS = 'LAST';
 
 export const meta = ({data}) => {
   const term = data?.term || '';
