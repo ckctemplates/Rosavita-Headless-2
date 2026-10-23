@@ -1,7 +1,6 @@
 import {Link} from 'react-router';
 import {Money} from '@shopify/hydrogen';
 import {AddToCartButton} from '~/components/AddToCartButton';
-import {useAside} from '~/components/Aside';
 
 const FALLBACK_TAGS = {
   moringa: ['30 DAY SUPPLY', '60 CAPSULES'],
@@ -34,7 +33,6 @@ function fallbackKey(product) {
 }
 
 export function ProductCard({product}) {
-  const {open} = useAside();
   const key = fallbackKey(product);
   const variant = product.variants?.nodes?.[0];
   const price = variant?.price ?? product.priceRange?.minVariantPrice;
@@ -94,8 +92,13 @@ export function ProductCard({product}) {
       {variant ? (
         <AddToCartButton
           className="rv-product__atc"
-          lines={[{merchandiseId: variant.id, quantity: 1}]}
-          onClick={() => open('cart')}
+          lines={[
+            {
+              merchandiseId: variant.id,
+              quantity: 1,
+              selectedVariant: variant,
+            },
+          ]}
           disabled={!variant.availableForSale}
         >
           {variant.availableForSale ? 'ADD TO CART' : 'SOLD OUT'}

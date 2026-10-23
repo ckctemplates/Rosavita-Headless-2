@@ -17,16 +17,21 @@ export const meta = () => {
 export async function loader({request, context}) {
   const url = new URL(request.url);
   const isPredictive = url.searchParams.has('predictive');
-  const searchPromise = isPredictive
-    ? predictiveSearch({request, context})
-    : regularSearch({request, context});
 
-  searchPromise.catch((error) => {
+  try {
+    return isPredictive
+      ? await predictiveSearch({request, context})
+      : await regularSearch({request, context});
+  } catch (error) {
     console.error(error);
-    return {term: '', result: null, error: error.message};
-  });
 
-  return await searchPromise;
+    return {
+      type: isPredictive ? 'predictive' : 'regular',
+      term: String(url.searchParams.get('q') || ''),
+      result: getEmptyPredictiveSearchResult(),
+      error: error.message,
+    };
+  }
 }
 
 /**
@@ -335,22 +340,15 @@ const PREDICTIVE_SEARCH_QUERY = `#graphql
     $limit: Int!
     $limitScope: PredictiveSearchLimitScope!
     $term: String!
-    $types: [PredictiveSearchType!]
   ) @inContext(country: $country, language: $language) {
     predictiveSearch(
       limit: $limit,
       limitScope: $limitScope,
       query: $term,
-      types: $types,
+      types: [PRODUCT, COLLECTION, QUERY],
     ) {
-      articles {
-        ...PredictiveArticle
-      }
       collections {
         ...PredictiveCollection
-      }
-      pages {
-        ...PredictivePage
       }
       products {
         ...PredictiveProduct
@@ -360,11 +358,35 @@ const PREDICTIVE_SEARCH_QUERY = `#graphql
       }
     }
   }
-  ${PREDICTIVE_SEARCH_ARTICLE_FRAGMENT}
   ${PREDICTIVE_SEARCH_COLLECTION_FRAGMENT}
-  ${PREDICTIVE_SEARCH_PAGE_FRAGMENT}
   ${PREDICTIVE_SEARCH_PRODUCT_FRAGMENT}
   ${PREDICTIVE_SEARCH_QUERY_FRAGMENT}
+`;
+
+const PREDICTIVE_CONTENT_QUERY = `#graphql
+  query PredictiveContent(
+    $country: CountryCode
+    $language: LanguageCode
+    $limit: Int!
+    $limitScope: PredictiveSearchLimitScope!
+    $term: String!
+  ) @inContext(country: $country, language: $language) {
+    predictiveSearch(
+      limit: $limit,
+      limitScope: $limitScope,
+      query: $term,
+      types: [PAGE, ARTICLE],
+    ) {
+      articles {
+        ...PredictiveArticle
+      }
+      pages {
+        ...PredictivePage
+      }
+    }
+  }
+  ${PREDICTIVE_SEARCH_ARTICLE_FRAGMENT}
+  ${PREDICTIVE_SEARCH_PAGE_FRAGMENT}
 `;
 
 /**
@@ -384,35 +406,52 @@ async function predictiveSearch({request, context}) {
 
   if (!term) return {type, term, result: getEmptyPredictiveSearchResult()};
 
-  // Predictively search articles, collections, pages, products, and queries (suggestions)
-  const {predictiveSearch: items, errors} = await storefront.query(
-    PREDICTIVE_SEARCH_QUERY,
-    {
-      variables: {
-        // customize search options as needed
-        limit,
-        limitScope: 'EACH',
-        term,
-      },
-    },
-  );
+  const variables = {limit, limitScope: 'EACH', term};
 
-  if (errors) {
-    throw new Error(
-      `Shopify API errors: ${errors.map(({message}) => message).join(', ')}`,
-    );
+  const [primaryResult, contentResult] = await Promise.allSettled([
+    storefront.query(PREDICTIVE_SEARCH_QUERY, {variables}),
+    storefront.query(PREDICTIVE_CONTENT_QUERY, {variables}),
+  ]);
+
+  if (primaryResult.status === 'rejected') {
+    throw primaryResult.reason;
   }
 
-  if (!items) {
-    throw new Error('No predictive search data returned from Shopify API');
+  const primary = primaryResult.value;
+  const content =
+    contentResult.status === 'fulfilled' ? contentResult.value : null;
+  const errors = [
+    ...(primary.errors ?? []),
+    ...(content?.errors ?? []),
+  ];
+  const error = errors.length
+    ? errors.map(({message}) => message).join(', ')
+    : undefined;
+  const items = primary.predictiveSearch;
+  const contentItems = content?.predictiveSearch ?? null;
+
+  if (!items && !contentItems) {
+    return {
+      type,
+      term,
+      error,
+      result: getEmptyPredictiveSearchResult(),
+    };
   }
 
-  const total = Object.values(items).reduce(
+  const normalizedItems = {
+    articles: contentItems?.articles ?? [],
+    collections: items?.collections ?? [],
+    pages: contentItems?.pages ?? [],
+    products: items?.products ?? [],
+    queries: items?.queries ?? [],
+  };
+  const total = Object.values(normalizedItems).reduce(
     (acc, item) => acc + item.length,
     0,
   );
 
-  return {type, term, result: {items, total}};
+  return {type, term, error, result: {items: normalizedItems, total}};
 }
 
 /** @typedef {import('./+types/search').Route} Route */

@@ -14,6 +14,7 @@ import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
 import resetStyles from '~/styles/reset.css?url';
 import appStyles from '~/styles/app.css?url';
 import rosavitaStyles from '~/styles/rosavita.css?url';
+import cartSearchStyles from '~/styles/cart-search.css?url';
 import {RosavitaPageLayout} from './components/RosavitaPageLayout';
 
 /**
@@ -154,6 +155,7 @@ export function Layout({children}) {
         <link rel="stylesheet" href={resetStyles}></link>
         <link rel="stylesheet" href={appStyles}></link>
         <link rel="stylesheet" href={rosavitaStyles}></link>
+        <link rel="stylesheet" href={cartSearchStyles}></link>
         <Meta />
         <Links />
       </head>
