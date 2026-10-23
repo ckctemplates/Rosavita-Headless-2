@@ -266,7 +266,13 @@ async function predictiveSearch({request, context}) {
   const {storefront} = context;
   const url = new URL(request.url);
   const term = String(url.searchParams.get('q') || '').trim();
-  const variables = {limit: 5, term};
+  const limit = Number(url.searchParams.get('limit')) || 5;
+  const variables = {
+    limit,
+    term,
+    limitScope: 'EACH',
+    types: ['PRODUCT', 'QUERY', 'COLLECTION', 'PAGE', 'ARTICLE'],
+  };
 
   if (!term) {
     return {
@@ -276,15 +282,25 @@ async function predictiveSearch({request, context}) {
     };
   }
 
-  const data = await storefront.query(PREDICTIVE_SEARCH_QUERY, {
-    variables,
-  });
-
-  return {
-    type: 'predictive',
-    term,
-    result: predictiveSearchResult({data, term}),
-  };
+  try {
+    const data = await storefront.query(PREDICTIVE_SEARCH_QUERY, {
+      variables,
+    });
+    const result = predictiveSearchResult({data: data?.predictiveSearch || data, term});
+    return {
+      type: 'predictive',
+      term,
+      result,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      type: 'predictive',
+      term,
+      result: getEmptyPredictiveSearchResult(),
+      error: error.message,
+    };
+  }
 }
 
 function predictiveSearchResult({data, term}) {
@@ -292,21 +308,32 @@ function predictiveSearchResult({data, term}) {
     return getEmptyPredictiveSearchResult();
   }
 
+  const queries = Array.isArray(data?.queries?.nodes)
+    ? data.queries.nodes
+    : Array.isArray(data?.queries)
+    ? data.queries
+    : [];
+
+  const products = data.products?.nodes || data.products || [];
+  const collections = data.collections?.nodes || data.collections || [];
+  const pages = data.pages?.nodes || data.pages || [];
+  const articles = data.articles?.nodes || data.articles || [];
+
   const total =
-    (data?.products?.nodes?.length || 0) +
-    (data?.collections?.nodes?.length || 0) +
-    (data?.pages?.nodes?.length || 0) +
-    (data?.articles?.nodes?.length || 0) +
-    (data?.queries?.nodes?.length || 0);
+    products.length +
+    collections.length +
+    pages.length +
+    articles.length +
+    queries.length;
 
   return {
     total,
     items: {
-      products: data.products || {nodes: []},
-      collections: data.collections || {nodes: []},
-      pages: data.pages || {nodes: []},
-      articles: data.articles || {nodes: []},
-      queries: data.queries || {nodes: []},
+      products: {nodes: products},
+      collections: {nodes: collections},
+      pages: {nodes: pages},
+      articles: {nodes: articles},
+      queries: queries,
     },
   };
 }
