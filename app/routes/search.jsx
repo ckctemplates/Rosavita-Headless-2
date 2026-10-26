@@ -303,21 +303,29 @@ async function predictiveSearch({request, context}) {
   }
 }
 
-function predictiveSearchResult({data, term}) {
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.nodes)) return value.nodes;
+  return [];
+}
+
+function predictiveSearchResult({data}) {
   if (!data) {
     return getEmptyPredictiveSearchResult();
   }
 
-  const queries = Array.isArray(data?.queries?.nodes)
-    ? data.queries.nodes
-    : Array.isArray(data?.queries)
-    ? data.queries
-    : [];
-
-  const products = data.products?.nodes || data.products || [];
-  const collections = data.collections?.nodes || data.collections || [];
-  const pages = data.pages?.nodes || data.pages || [];
-  const articles = data.articles?.nodes || data.articles || [];
+  const queries = asArray(data.queries).map((query) => ({
+    ...query,
+    text:
+      query.text ||
+      query.styledText ||
+      query.attributes?.find((attribute) => attribute.key === 'query')?.value ||
+      '',
+  })).filter((query) => query.text);
+  const products = asArray(data.products);
+  const collections = asArray(data.collections);
+  const pages = asArray(data.pages);
+  const articles = asArray(data.articles);
 
   const total =
     products.length +
@@ -329,11 +337,11 @@ function predictiveSearchResult({data, term}) {
   return {
     total,
     items: {
-      products: {nodes: products},
-      collections: {nodes: collections},
-      pages: {nodes: pages},
-      articles: {nodes: articles},
-      queries: queries,
+      products,
+      collections,
+      pages,
+      articles,
+      queries,
     },
   };
 }
