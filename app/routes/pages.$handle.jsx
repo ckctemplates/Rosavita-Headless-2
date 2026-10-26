@@ -1,11 +1,31 @@
 import {useLoaderData} from 'react-router';
+import {PageContent} from '~/components/PageContent';
+import {createPageDescription, preparePageHtml} from '~/lib/prepare-page-html';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 
 /**
  * @type {Route.MetaFunction}
  */
 export const meta = ({data}) => {
-  return [{title: `Hydrogen | ${data?.page.title ?? ''}`}];
+  const page = data?.page;
+
+  if (!page) {
+    return [{title: 'Page not found | Rosavita'}];
+  }
+
+  const title = page.seo?.title?.trim() || page.title;
+
+  return [
+    {title: `${title} | Rosavita`},
+    ...(data.description
+      ? [{name: 'description', content: data.description}]
+      : []),
+    {
+      tagName: 'link',
+      rel: 'canonical',
+      href: `/pages/${page.handle}`,
+    },
+  ];
 };
 
 /**
@@ -35,7 +55,10 @@ async function loadCriticalData({context, request, params}) {
     context.storefront.query(PAGE_QUERY, {
       variables: {
         handle: params.handle,
+        language: context.storefront.i18n?.language,
+        country: context.storefront.i18n?.country,
       },
+      cache: context.storefront.CacheLong(),
     }),
     // Add other queries here, so that they are loaded in parallel
   ]);
@@ -46,8 +69,16 @@ async function loadCriticalData({context, request, params}) {
 
   redirectIfHandleIsLocalized(request, {handle: params.handle, data: page});
 
+  const {body, ...pageData} = page;
+  const contentHtml = preparePageHtml(body, {
+    storeDomain: context.env.PUBLIC_STORE_DOMAIN,
+  });
+
   return {
-    page,
+    page: pageData,
+    contentHtml,
+    description:
+      page.seo?.description?.trim() || createPageDescription(body),
   };
 }
 
@@ -57,22 +88,15 @@ async function loadCriticalData({context, request, params}) {
  * Make sure to not throw any errors here, as it will cause the page to 500.
  * @param {Route.LoaderArgs}
  */
-function loadDeferredData({context}) {
+function loadDeferredData() {
   return {};
 }
 
 export default function Page() {
   /** @type {LoaderReturnData} */
-  const {page} = useLoaderData();
+  const {page, contentHtml} = useLoaderData();
 
-  return (
-    <div className="page">
-      <header>
-        <h1>{page.title}</h1>
-      </header>
-      <main dangerouslySetInnerHTML={{__html: page.body}} />
-    </div>
-  );
+  return <PageContent title={page.title} html={contentHtml} />;
 }
 
 const PAGE_QUERY = `#graphql

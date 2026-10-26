@@ -68,9 +68,9 @@ function ArrowRightIcon() {
 const supportLinks = [
   {label: 'Search', to: '/search'},
   {label: 'Contact Us', to: '/pages/contact'},
-  {label: 'Privacy Policy', to: '/policies/privacy-policy'},
-  {label: 'Terms of Service', to: '/policies/terms-of-service'},
-  {label: 'Refund Policy', to: '/policies/refund-policy'},
+  {label: 'Privacy Policy', to: '/pages/privacy-policy'},
+  {label: 'Terms of Service', to: '/pages/terms-of-service'},
+  {label: 'Refund Policy', to: '/pages/refund-policy'},
   {label: 'Manage Subscription', to: '/pages/manage-subscription'},
   {
     label: 'Do Not Sell or Share My Personal Information',

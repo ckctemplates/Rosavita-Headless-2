@@ -1,4 +1,15 @@
-import {Link, useLoaderData} from 'react-router';
+import {Link, redirect, useLoaderData} from 'react-router';
+
+// Keep /policies/privacy-policy, /policies/terms-of-service and
+// /policies/refund-policy working by sending them to the Shopify page
+// versions used by the site navigation.
+export const REDIRECT_POLICY_ROUTES = true;
+
+const POLICY_PAGE_HANDLES = new Set([
+  'privacy-policy',
+  'terms-of-service',
+  'refund-policy',
+]);
 
 /**
  * @type {Route.MetaFunction}
@@ -10,9 +21,16 @@ export const meta = ({data}) => {
 /**
  * @param {Route.LoaderArgs}
  */
-export async function loader({params, context}) {
+export async function loader({params, context, request}) {
   if (!params.handle) {
     throw new Response('No handle was passed in', {status: 404});
+  }
+
+  if (REDIRECT_POLICY_ROUTES && POLICY_PAGE_HANDLES.has(params.handle)) {
+    const url = new URL(request.url);
+    url.pathname = `/pages/${params.handle}`;
+
+    throw redirect(`${url.pathname}${url.search}`, {status: 301});
   }
 
   const policyName = params.handle.replace(/-([a-z])/g, (_, m1) =>
