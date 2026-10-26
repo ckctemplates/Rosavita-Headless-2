@@ -63,10 +63,8 @@ export function PurchaseBox({
   const isAvailable = Boolean(selectedVariant?.availableForSale);
   const isSubscribe =
     purchaseMode === 'subscribe' && hasPlans && Boolean(pricing?.sellingPlan);
-  const fallbackPlan =
-    product?.sellingPlanGroups?.nodes?.[0]?.sellingPlans?.nodes?.[0] || null;
-  const plan = pricing?.sellingPlan || fallbackPlan;
-  const frequency = formatFrequency(plan) || 'month';
+  const plan = isSubscribe ? pricing.sellingPlan : null;
+  const frequency = formatFrequency(plan);
   const interval = humanizeInterval(plan);
   const refillParts = REFILL_TEMPLATE.split('{price}');
   const refillBeforePrice = refillParts[0] || '';

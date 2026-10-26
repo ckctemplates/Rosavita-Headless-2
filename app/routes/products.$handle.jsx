@@ -76,7 +76,12 @@ export async function loader({context, params, request}) {
 
   const [productResult, paymentResult] = await Promise.all([
     storefront.query(PRODUCT_QUERY, {
-      variables: {handle, selectedOptions},
+      variables: {
+        handle,
+        selectedOptions,
+        country: context.storefront.i18n.country,
+        language: context.storefront.i18n.language,
+      },
       cache: storefront.CacheShort(),
     }),
     storefront
@@ -255,20 +260,22 @@ export default function Product() {
 
 function buildProductJsonLd({product, selectedVariant, pricing, content}) {
   const description = content.intro || stripHtml(product.description).slice(0, 400);
-  const offer = selectedVariant
-    ? {
-        '@type': 'Offer',
-        priceCurrency:
-          pricing?.price?.currencyCode ||
-          selectedVariant.price?.currencyCode ||
-          'USD',
-        price: pricing?.price?.amount || selectedVariant.price?.amount,
-        availability: selectedVariant.availableForSale
-          ? 'https://schema.org/InStock'
-          : 'https://schema.org/OutOfStock',
-        url: `/products/${product.handle}`,
-      }
-    : undefined;
+  const offerCurrency =
+    pricing?.price?.currencyCode || selectedVariant?.price?.currencyCode;
+  const offerPrice =
+    pricing?.price?.amount || selectedVariant?.price?.amount;
+  const offer =
+    selectedVariant && offerPrice && offerCurrency
+      ? {
+          '@type': 'Offer',
+          priceCurrency: offerCurrency,
+          price: offerPrice,
+          availability: selectedVariant.availableForSale
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
+          url: `/products/${product.handle}`,
+        }
+      : undefined;
 
   return {
     '@context': 'https://schema.org',

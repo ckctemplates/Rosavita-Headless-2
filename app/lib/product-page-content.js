@@ -710,12 +710,17 @@ export function getVariantPricing(
   purchaseMode,
   preferredPlanName = DEFAULT_PLAN_NAME,
 ) {
-  const currencyCode = variant?.price?.currencyCode || 'USD';
-  const oneTime = Number(variant?.price?.amount || 0);
   const allocation = getVariantAllocation(variant, preferredPlanName);
-  const subscriptionPrice = Number(
-    allocation?.priceAdjustments?.[0]?.price?.amount,
-  );
+  const adjustment = allocation?.priceAdjustments?.[0];
+  // Always use the currency Shopify returned for this variant; never assume USD.
+  const currencyCode =
+    variant?.price?.currencyCode ||
+    adjustment?.price?.currencyCode ||
+    adjustment?.compareAtPrice?.currencyCode ||
+    variant?.compareAtPrice?.currencyCode ||
+    '';
+  const oneTime = Number(variant?.price?.amount || 0);
+  const subscriptionPrice = Number(adjustment?.price?.amount);
   const compareAt = Number(variant?.compareAtPrice?.amount || 0);
 
   const current =
@@ -827,20 +832,6 @@ export function formatShipByDate(date) {
     day: 'numeric',
     timeZone: 'UTC',
   }).format(date);
-}
-
-/** @param {any} money */
-export function formatMoneyForAnnouncement(money) {
-  const amount = Number(money?.amount || 0);
-  const currencyCode = money?.currencyCode || 'USD';
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currencyCode,
-    }).format(amount);
-  } catch {
-    return `${amount.toFixed(2)} ${currencyCode}`;
-  }
 }
 
 /** @param {any} product */
