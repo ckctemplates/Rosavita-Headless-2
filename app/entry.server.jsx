@@ -18,6 +18,10 @@ export default async function handleRequest(
   context,
 ) {
   const {nonce, header, NonceProvider} = createContentSecurityPolicy({
+    // Optional Cloudflare Turnstile widget on the contact form.
+    scriptSrc: ["'self'", 'https://challenges.cloudflare.com'],
+    connectSrc: ['https://challenges.cloudflare.com'],
+    frameSrc: ["'self'", 'https://challenges.cloudflare.com'],
     shop: {
       checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
       storeDomain: context.env.PUBLIC_STORE_DOMAIN,
