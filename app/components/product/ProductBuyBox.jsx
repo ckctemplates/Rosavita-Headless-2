@@ -1,9 +1,9 @@
+import {Money} from '@shopify/hydrogen';
 import {ProductPriceRow} from '~/components/product/ProductPriceRow';
 import {PurchaseBox} from '~/components/product/PurchaseBox';
 import {StarRating} from '~/components/product/StarRating';
 import {CheckIcon} from '~/components/product/ProductIcons';
 import {RATING_SOURCE_LABEL} from '~/lib/product-page-constants';
-import {formatMoneyForAnnouncement} from '~/lib/product-page-content';
 
 /**
  * The complete right-hand product information column.
@@ -36,12 +36,6 @@ export function ProductBuyBox({
   preferredPlanName,
   addToCartRef,
 }) {
-  const announcement = pricing?.price
-    ? `${formatMoneyForAnnouncement(pricing.price)}. ${
-        selectedVariant?.availableForSale ? 'In stock' : 'Out of stock'
-      }. ${purchaseMode === 'subscribe' ? 'Subscription' : 'One-time purchase'}.`
-    : 'This product is currently unavailable.';
-
   return (
     <div className="rv-pdp-buybox">
       {content.rating ? (
@@ -65,7 +59,18 @@ export function ProductBuyBox({
       />
 
       <p aria-atomic="true" aria-live="polite" className="rv-sr-only">
-        {announcement}
+        {pricing?.price ? (
+          <>
+            <Money as="span" data={pricing.price} />.{' '}
+            {selectedVariant?.availableForSale ? 'In stock' : 'Out of stock'}.{' '}
+            {purchaseMode === 'subscribe'
+              ? 'Subscription'
+              : 'One-time purchase'}
+            .
+          </>
+        ) : (
+          'This product is currently unavailable.'
+        )}
       </p>
 
       {content.subheading ? (

@@ -9,6 +9,10 @@ import {
   RATING_SOURCE_LABEL,
 } from './product-page-constants';
 
+// Fallback for the second story row. The reference page uses this photo/video
+// frame; override it from the custom.story_sections metafield when available.
+export const STORY_ROW_2_IMAGE_URL = '/images/beetroot-story-2.jpg';
+
 /**
  * Fallback content is kept in one editable place, keyed by product handle.
  * Metafields always win over this content; products with neither hide the section.
@@ -81,6 +85,8 @@ export const PRODUCT_PAGE_FALLBACKS = {
         imageUrl:
           'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/pro22.jpg?v=1792940407',
         imageAlt: 'Woman holding Rosavita Beetroot bottle in a kitchen',
+        imageWidth: 1024,
+        imageHeight: 1024,
       },
       {
         heading: 'Rosavita Beetroot: Simple Daily Nutrition',
@@ -96,9 +102,10 @@ export const PRODUCT_PAGE_FALLBACKS = {
           'Support a healthy circulatory system*',
           'Promote overall vitality*',
         ],
-        imageUrl:
-          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/c22.jpg?v=1792941874',
-        imageAlt: 'Hand holding an open bottle of beetroot capsules',
+        imageUrl: STORY_ROW_2_IMAGE_URL,
+        imageAlt: 'Hand holding an open bottle of beetroot capsules over green grass',
+        imageWidth: 720,
+        imageHeight: 836,
       },
     ],
     superfood: {
@@ -226,6 +233,13 @@ export function safeJsonParse(value) {
 function toTrimmedString(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
+}
+
+/** @param {unknown} value */
+function toDimension(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return null;
+  return Math.round(number);
 }
 
 /** @param {unknown} value */
@@ -402,6 +416,9 @@ function normalizeStorySections(product, fallback) {
         item.image_url ?? item.imageUrl ?? item.image,
       ),
       imageAlt: toTrimmedString(item.image_alt ?? item.imageAlt),
+      imageWidth: toDimension(item.image_width ?? item.imageWidth),
+      imageHeight: toDimension(item.image_height ?? item.imageHeight),
+      imageFit: toTrimmedString(item.image_fit ?? item.imageFit).toLowerCase(),
     }))
     .filter(
       (item) =>
@@ -710,12 +727,17 @@ export function getVariantPricing(
   purchaseMode,
   preferredPlanName = DEFAULT_PLAN_NAME,
 ) {
-  const currencyCode = variant?.price?.currencyCode || 'USD';
-  const oneTime = Number(variant?.price?.amount || 0);
   const allocation = getVariantAllocation(variant, preferredPlanName);
-  const subscriptionPrice = Number(
-    allocation?.priceAdjustments?.[0]?.price?.amount,
-  );
+  const adjustment = allocation?.priceAdjustments?.[0];
+  // Always use the currency Shopify returned for this variant; never assume USD.
+  const currencyCode =
+    variant?.price?.currencyCode ||
+    adjustment?.price?.currencyCode ||
+    adjustment?.compareAtPrice?.currencyCode ||
+    variant?.compareAtPrice?.currencyCode ||
+    '';
+  const oneTime = Number(variant?.price?.amount || 0);
+  const subscriptionPrice = Number(adjustment?.price?.amount);
   const compareAt = Number(variant?.compareAtPrice?.amount || 0);
 
   const current =
@@ -827,20 +849,6 @@ export function formatShipByDate(date) {
     day: 'numeric',
     timeZone: 'UTC',
   }).format(date);
-}
-
-/** @param {any} money */
-export function formatMoneyForAnnouncement(money) {
-  const amount = Number(money?.amount || 0);
-  const currencyCode = money?.currencyCode || 'USD';
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currencyCode,
-    }).format(amount);
-  } catch {
-    return `${amount.toFixed(2)} ${currencyCode}`;
-  }
 }
 
 /** @param {any} product */
