@@ -154,8 +154,26 @@ export function SearchPanel() {
       (debouncedTerm.length >= MIN_QUERY_LENGTH &&
         (fetcher.state !== 'idle' || !dataMatches)));
 
-  const items = dataMatches ? predictiveResult.items : EMPTY_ITEMS;
-  const total = dataMatches ? predictiveResult.total : 0;
+  const items = dataMatches
+    ? {
+        articles: Array.isArray(predictiveResult.items?.articles)
+          ? predictiveResult.items.articles
+          : [],
+        collections: Array.isArray(predictiveResult.items?.collections)
+          ? predictiveResult.items.collections
+          : [],
+        pages: Array.isArray(predictiveResult.items?.pages)
+          ? predictiveResult.items.pages
+          : [],
+        products: Array.isArray(predictiveResult.items?.products)
+          ? predictiveResult.items.products
+          : [],
+        queries: Array.isArray(predictiveResult.items?.queries)
+          ? predictiveResult.items.queries
+          : [],
+      }
+    : EMPTY_ITEMS;
+  const total = dataMatches ? Number(predictiveResult.total) || 0 : 0;
 
   const links = useMemo(() => {
     if (!dataMatches || isLoading) return [];
