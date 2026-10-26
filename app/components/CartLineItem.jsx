@@ -61,8 +61,9 @@ function CloseIcon() {
  * }}
  */
 export function CartLineItem({layout, line, childrenMap}) {
-  const {id, merchandise} = line;
+  const {id, merchandise, sellingPlanAllocation} = line;
   const {product, image, selectedOptions} = merchandise;
+  const sellingPlanName = sellingPlanAllocation?.sellingPlan?.name;
   const lineItemUrl = useVariantUrl(product.handle, selectedOptions);
   const {close} = useAside();
   const lineItemChildren = childrenMap?.[id];
@@ -141,6 +142,9 @@ export function CartLineItem({layout, line, childrenMap}) {
             </Link>
             {variantLabel ? (
               <p className="rv-cart-line__variant">{variantLabel}</p>
+            ) : null}
+            {sellingPlanName ? (
+              <p className="rv-cart-line__plan">{sellingPlanName}</p>
             ) : null}
           </div>
           <CartLineRemoveButton
