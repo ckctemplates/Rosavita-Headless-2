@@ -1,9 +1,24 @@
-import {useNavigate, useSearchParams} from 'react-router';
+import {useSearchParams} from 'react-router';
 import {useEffect, useId, useRef, useState} from 'react';
+import {
+  findFilterForInput,
+  parseFilterInput,
+  stableStringify,
+} from '~/lib/search';
 
 function ChevronIcon() {
   return (
-    <svg aria-hidden="true" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      aria-hidden="true"
+      width="10"
+      height="6"
+      viewBox="0 0 10 6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <polyline points="1 1 5 5 9 1" />
     </svg>
   );
@@ -11,7 +26,16 @@ function ChevronIcon() {
 
 function CloseIcon() {
   return (
-    <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
+    <svg
+      aria-hidden="true"
+      width="10"
+      height="10"
+      viewBox="0 0 10 10"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      strokeLinecap="round"
+    >
       <line x1="1" y1="1" x2="9" y2="9" />
       <line x1="9" y1="1" x2="1" y2="9" />
     </svg>
@@ -21,6 +45,8 @@ function CloseIcon() {
 function FilterDropdown({filter, appliedFilters, onApply}) {
   const [open, setOpen] = useState(false);
   const [localValues, setLocalValues] = useState(new Set());
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   const ref = useRef(null);
   const menuId = useId();
 
@@ -42,16 +68,26 @@ function FilterDropdown({filter, appliedFilters, onApply}) {
   }, []);
 
   useEffect(() => {
-    const applied = new Set(
-      appliedFilters
-        .filter((af) => af.filterId === filter.id)
-        .map((af) => JSON.stringify(af.input)),
+    setLocalValues(
+      new Set(
+        appliedFilters
+          .filter((applied) => applied.filterId === filter.id)
+          .map((applied) => stableStringify(parseFilterInput(applied.input))),
+      ),
     );
-    setLocalValues(applied);
+  }, [appliedFilters, filter.id]);
+
+  useEffect(() => {
+    const priceInput = appliedFilters.find(
+      (applied) => applied.filterId === filter.id && applied.input?.price,
+    )?.input?.price;
+
+    setMinPrice(priceInput?.min != null ? String(priceInput.min) : '');
+    setMaxPrice(priceInput?.max != null ? String(priceInput.max) : '');
   }, [appliedFilters, filter.id]);
 
   const toggle = (value) => {
-    const key = JSON.stringify(value.input);
+    const key = stableStringify(parseFilterInput(value.input));
     setLocalValues((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
@@ -63,6 +99,23 @@ function FilterDropdown({filter, appliedFilters, onApply}) {
   const handleApply = () => {
     const values = Array.from(localValues).map((key) => JSON.parse(key));
     onApply(filter.id, values);
+    setOpen(false);
+  };
+
+  const handlePriceApply = () => {
+    const price = {};
+
+    if (minPrice !== '' && Number.isFinite(Number(minPrice))) {
+      price.min = Math.max(0, Number(minPrice));
+    }
+    if (maxPrice !== '' && Number.isFinite(Number(maxPrice))) {
+      price.max = Math.max(0, Number(maxPrice));
+    }
+    if (price.min != null && price.max != null && price.min > price.max) {
+      [price.min, price.max] = [price.max, price.min];
+    }
+
+    onApply(filter.id, Object.keys(price).length ? [{price}] : []);
     setOpen(false);
   };
 
@@ -80,18 +133,39 @@ function FilterDropdown({filter, appliedFilters, onApply}) {
           <ChevronIcon />
         </button>
         {open ? (
-          <div className="rv-sfilters__panel rv-sfilters__panel--price" id={menuId}>
+          <div
+            className="rv-sfilters__panel rv-sfilters__panel--price"
+            id={menuId}
+          >
             <div className="rv-sfilters__price-row">
               <label className="rv-sfilters__price-field">
                 <span>From</span>
-                <input type="number" placeholder="0" disabled />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0"
+                  value={minPrice}
+                  onChange={(event) => setMinPrice(event.target.value)}
+                />
               </label>
               <label className="rv-sfilters__price-field">
                 <span>To</span>
-                <input type="number" placeholder="" disabled />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder=""
+                  value={maxPrice}
+                  onChange={(event) => setMaxPrice(event.target.value)}
+                />
               </label>
             </div>
-            <button type="button" className="rv-sfilters__apply" onClick={() => setOpen(false)}>
+            <button
+              type="button"
+              className="rv-sfilters__apply"
+              onClick={handlePriceApply}
+            >
               APPLY
             </button>
           </div>
@@ -115,13 +189,15 @@ function FilterDropdown({filter, appliedFilters, onApply}) {
       {open ? (
         <div className="rv-sfilters__panel" id={menuId}>
           <ul className="rv-sfilters__list">
-            {filter.values.map((value) => {
-              const key = JSON.stringify(value.input);
+            {(filter.values || []).map((value) => {
+              const key = stableStringify(parseFilterInput(value.input));
               const isChecked = localValues.has(key);
-              const disabled = value.count === 0;
+              const disabled = value.count === 0 && !isChecked;
               return (
                 <li key={value.id}>
-                  <label className={`rv-sfilters__option ${disabled ? 'is-disabled' : ''}`}>
+                  <label
+                    className={`rv-sfilters__option ${disabled ? 'is-disabled' : ''}`}
+                  >
                     <input
                       type="checkbox"
                       checked={isChecked}
@@ -135,7 +211,11 @@ function FilterDropdown({filter, appliedFilters, onApply}) {
               );
             })}
           </ul>
-          <button type="button" className="rv-sfilters__apply" onClick={handleApply}>
+          <button
+            type="button"
+            className="rv-sfilters__apply"
+            onClick={handleApply}
+          >
             APPLY
           </button>
         </div>
@@ -144,23 +224,37 @@ function FilterDropdown({filter, appliedFilters, onApply}) {
   );
 }
 
-export function SearchFilters({filters = [], productFilters = []}) {
+export function SearchFilters({filters = [], appliedFilters = []}) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-
-  const appliedFilters = productFilters.map((pf) => ({
-    filterId: pf.id,
-    label: pf.label,
-    input: pf.input,
-    valueLabel: pf.label,
-  }));
 
   const handleApply = (filterId, values) => {
     const next = new URLSearchParams(searchParams);
+    const existing = next.getAll('filter');
     next.delete('filter');
+
+    for (const raw of existing) {
+      let input;
+      try {
+        input = JSON.parse(raw);
+      } catch {
+        continue;
+      }
+
+      const key = stableStringify(input);
+      const belongsToFilter =
+        appliedFilters.some(
+          (applied) =>
+            applied.filterId === filterId &&
+            stableStringify(applied.input) === key,
+        ) || findFilterForInput(input, filters).filter?.id === filterId;
+
+      if (!belongsToFilter) next.append('filter', raw);
+    }
+
     for (const value of values) {
       next.append('filter', JSON.stringify(value));
     }
+
     setSearchParams(next);
   };
 
@@ -170,13 +264,28 @@ export function SearchFilters({filters = [], productFilters = []}) {
     setSearchParams(next);
   };
 
-  const removeFilter = (idx) => {
-    const filters = searchParams.getAll('filter');
+  const removeFilter = (applied) => {
     const next = new URLSearchParams(searchParams);
+    const existing = next.getAll('filter');
+    const key = stableStringify(applied.input);
+    let removed = false;
+
     next.delete('filter');
-    filters.forEach((f, i) => {
-      if (i !== idx) next.append('filter', f);
-    });
+    for (const raw of existing) {
+      let input;
+      try {
+        input = JSON.parse(raw);
+      } catch {
+        continue;
+      }
+
+      if (!removed && stableStringify(input) === key) {
+        removed = true;
+        continue;
+      }
+      next.append('filter', raw);
+    }
+
     setSearchParams(next);
   };
 
@@ -189,7 +298,7 @@ export function SearchFilters({filters = [], productFilters = []}) {
             <FilterDropdown
               key={filter.id}
               filter={filter}
-              appliedFilters={productFilters.filter((pf) => pf.id === filter.id).map((pf) => ({filterId: pf.id, input: pf.input}))}
+              appliedFilters={appliedFilters}
               onApply={handleApply}
             />
           ))}
@@ -198,22 +307,26 @@ export function SearchFilters({filters = [], productFilters = []}) {
           <SearchSortSelect />
         </div>
       </div>
-      {productFilters.length ? (
+      {appliedFilters.length ? (
         <div className="rv-sfilters__chips-row">
           <div className="rv-sfilters__chips">
-            {productFilters.map((pf, idx) => (
+            {appliedFilters.map((applied) => (
               <button
-                key={idx}
+                key={`${applied.filterId || 'filter'}-${stableStringify(applied.input)}`}
                 type="button"
                 className="rv-sfilters__chip"
-                onClick={() => removeFilter(idx)}
+                onClick={() => removeFilter(applied)}
               >
-                {pf.label}
+                {applied.valueLabel}
                 <CloseIcon />
               </button>
             ))}
           </div>
-          <button type="button" className="rv-sfilters__remove-all" onClick={removeAll}>
+          <button
+            type="button"
+            className="rv-sfilters__remove-all"
+            onClick={removeAll}
+          >
             Remove all
           </button>
         </div>

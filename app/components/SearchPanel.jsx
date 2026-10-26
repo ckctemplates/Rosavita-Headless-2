@@ -18,6 +18,49 @@ const EMPTY_ITEMS = {
   queries: [],
 };
 
+const HTML_ENTITIES = {
+  amp: '&',
+  gt: '>',
+  lt: '<',
+  quot: '"',
+  '#39': "'",
+};
+
+function decodeHtmlEntities(value) {
+  return value.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (match, entity) => {
+    if (entity.startsWith('#')) {
+      const code =
+        entity[1].toLowerCase() === 'x'
+          ? parseInt(entity.slice(2), 16)
+          : parseInt(entity.slice(1), 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : match;
+    }
+    return HTML_ENTITIES[entity] || match;
+  });
+}
+
+// Shopify returns highlighted query suggestions as a small HTML string
+// (for example `<mark>gum</mark><span>mies</span>`). Render only the plain
+// text and the match marker instead of injecting arbitrary HTML.
+function renderStyledText(styledText) {
+  if (typeof styledText !== 'string' || !styledText) return null;
+
+  return styledText.split(/(<mark>[\s\S]*?<\/mark>)/g).map((part) => {
+    if (!part) return null;
+
+    const isMatch = part.startsWith('<mark>');
+    const text = decodeHtmlEntities(part.replace(/<[^>]*>/g, ''));
+
+    if (!text) return null;
+
+    return isMatch ? (
+      <mark key={part}>{text}</mark>
+    ) : (
+      <span key={part}>{text}</span>
+    );
+  });
+}
+
 function SearchIcon() {
   return (
     <svg
@@ -154,36 +197,44 @@ export function SearchPanel() {
       (debouncedTerm.length >= MIN_QUERY_LENGTH &&
         (fetcher.state !== 'idle' || !dataMatches)));
 
-  const items = dataMatches
-    ? {
-        articles: Array.isArray(predictiveResult.items?.articles)
-          ? predictiveResult.items.articles
-          : [],
-        collections: Array.isArray(predictiveResult.items?.collections)
-          ? predictiveResult.items.collections
-          : [],
-        pages: Array.isArray(predictiveResult.items?.pages)
-          ? predictiveResult.items.pages
-          : [],
-        products: Array.isArray(predictiveResult.items?.products)
-          ? predictiveResult.items.products
-          : [],
-        queries: Array.isArray(predictiveResult.items?.queries)
-          ? predictiveResult.items.queries
-          : [],
-      }
-    : EMPTY_ITEMS;
-  const total = dataMatches ? Number(predictiveResult.total) || 0 : 0;
+  const items = useMemo(() => {
+    if (!dataMatches || !predictiveResult?.items) return EMPTY_ITEMS;
+
+    const resultItems = predictiveResult.items;
+    const nodesOrSelf = (value) =>
+      Array.isArray(value?.nodes)
+        ? value.nodes
+        : Array.isArray(value)
+          ? value
+          : [];
+
+    return {
+      articles: nodesOrSelf(resultItems.articles),
+      collections: nodesOrSelf(resultItems.collections),
+      pages: nodesOrSelf(resultItems.pages),
+      products: nodesOrSelf(resultItems.products),
+      queries: nodesOrSelf(resultItems.queries),
+    };
+  }, [dataMatches, predictiveResult]);
+  const total = dataMatches ? predictiveResult.total : 0;
 
   const links = useMemo(() => {
     if (!dataMatches || isLoading) return [];
 
+    const queries = Array.isArray(items.queries) ? items.queries : [];
+    const products = Array.isArray(items.products) ? items.products : [];
+    const collections = Array.isArray(items.collections)
+      ? items.collections
+      : [];
+    const pages = Array.isArray(items.pages) ? items.pages : [];
+    const articles = Array.isArray(items.articles) ? items.articles : [];
+
     return [
-      ...items.queries.map((query) => ({
-        id: `rv-search-query-${query.text.replace(/[^a-zA-Z0-9_-]/g, '-')}`,
-        href: `${SEARCH_ENDPOINT}?q=${encodeURIComponent(query.text)}`,
+      ...queries.map((query) => ({
+        id: `rv-search-query-${(query.text || '').replace(/[^a-zA-Z0-9_-]/g, '-')}`,
+        href: `${SEARCH_ENDPOINT}?q=${encodeURIComponent(query.text || '')}`,
       })),
-      ...items.products.slice(0, MAX_PRODUCTS).map((product) => ({
+      ...products.slice(0, MAX_PRODUCTS).map((product) => ({
         id: `rv-search-product-${product.id}`,
         href: urlWithTrackingParams({
           baseUrl: `/products/${product.handle}`,
@@ -191,7 +242,7 @@ export function SearchPanel() {
           term: debouncedTerm,
         }),
       })),
-      ...items.collections.map((collection) => ({
+      ...collections.map((collection) => ({
         id: `rv-search-collection-${collection.id}`,
         href: urlWithTrackingParams({
           baseUrl: `/collections/${collection.handle}`,
@@ -199,7 +250,7 @@ export function SearchPanel() {
           term: debouncedTerm,
         }),
       })),
-      ...items.pages.map((page) => ({
+      ...pages.map((page) => ({
         id: `rv-search-page-${page.id}`,
         href: urlWithTrackingParams({
           baseUrl: `/pages/${page.handle}`,
@@ -207,10 +258,10 @@ export function SearchPanel() {
           term: debouncedTerm,
         }),
       })),
-      ...items.articles.map((article) => ({
+      ...articles.map((article) => ({
         id: `rv-search-article-${article.id}`,
         href: urlWithTrackingParams({
-          baseUrl: `/blogs/${article.blog.handle}/${article.handle}`,
+          baseUrl: `/blogs/${article.blog?.handle || 'news'}/${article.handle}`,
           trackingParams: article.trackingParameters,
           term: debouncedTerm,
         }),
@@ -340,11 +391,7 @@ export function SearchPanel() {
             </button>
           </form>
 
-          <div
-            aria-live="polite"
-            className="rv-search-results"
-            id={resultsId}
-          >
+          <div aria-live="polite" className="rv-search-results" id={resultsId}>
             {!showResults ? (
               <PopularSearches onSelect={goTo} />
             ) : isLoading ? (
@@ -355,7 +402,8 @@ export function SearchPanel() {
             ) : total === 0 ? (
               <div className="rv-search-empty">
                 <p>
-                  No results found for <strong>&ldquo;{debouncedTerm}&rdquo;</strong>
+                  No results found for{' '}
+                  <strong>&ldquo;{debouncedTerm}&rdquo;</strong>
                 </p>
                 <Link
                   className="rv-search-view-all"
@@ -367,27 +415,35 @@ export function SearchPanel() {
               </div>
             ) : (
               <div className="rv-search-card">
-                {items.queries.length ? (
+                {Array.isArray(items.queries) && items.queries.length ? (
                   <SearchSection title="Suggestions">
                     <ul className="rv-search-suggestions">
-                      {items.queries.map((query) => (
-                        <li key={query.text}>
-                          <Link
-                            className="rv-search-suggestion"
-                            id={`rv-search-query-${query.text.replace(
-                              /[^a-zA-Z0-9_-]/g,
-                              '-',
-                            )}`}
-                            onClick={close}
-                            to={`${SEARCH_ENDPOINT}?q=${encodeURIComponent(
-                              query.text,
-                            )}`}
-                          >
-                            <SearchIcon />
-                            {query.text}
-                          </Link>
-                        </li>
-                      ))}
+                      {(Array.isArray(items.queries) ? items.queries : []).map(
+                        (query) => (
+                          <li key={query.text}>
+                            <Link
+                              className="rv-search-suggestion"
+                              id={`rv-search-query-${query.text.replace(
+                                /[^a-zA-Z0-9_-]/g,
+                                '-',
+                              )}`}
+                              onClick={close}
+                              to={`${SEARCH_ENDPOINT}?q=${encodeURIComponent(
+                                query.text,
+                              )}`}
+                            >
+                              <span className="rv-search-suggestion-icon">
+                                <SearchIcon />
+                              </span>
+                              <span className="rv-search-suggestion-text">
+                                {query.styledText
+                                  ? renderStyledText(query.styledText)
+                                  : query.text}
+                              </span>
+                            </Link>
+                          </li>
+                        ),
+                      )}
                     </ul>
                   </SearchSection>
                 ) : null}
@@ -395,56 +451,62 @@ export function SearchPanel() {
                 {items.products.length ? (
                   <SearchSection title="Products">
                     <ul className="rv-search-products">
-                      {items.products.slice(0, MAX_PRODUCTS).map((product) => {
-                        const variant =
-                          product.selectedOrFirstAvailableVariant;
-                        const image = variant?.image;
-                        return (
-                          <li key={product.id}>
-                            <Link
-                              className="rv-search-product"
-                              id={`rv-search-product-${product.id}`}
-                              onClick={close}
-                              to={urlWithTrackingParams({
-                                baseUrl: `/products/${product.handle}`,
-                                trackingParams: product.trackingParameters,
-                                term: debouncedTerm,
-                              })}
-                            >
-                              <span className="rv-search-product__media">
-                                {image ? (
-                                  <Image
-                                    alt={image.altText || product.title}
-                                    aspectRatio="1/1"
-                                    data={image}
-                                    height={64}
-                                    loading="lazy"
-                                    width={64}
-                                  />
-                                ) : null}
-                              </span>
-                              <span className="rv-search-product__body">
-                                <span className="rv-search-product__title">
-                                  {product.title}
+                      {(Array.isArray(items.products) ? items.products : [])
+                        .slice(0, MAX_PRODUCTS)
+                        .map((product) => {
+                          const variant =
+                            product.selectedOrFirstAvailableVariant;
+                          const image = variant?.image;
+                          return (
+                            <li key={product.id}>
+                              <Link
+                                className="rv-search-product"
+                                id={`rv-search-product-${product.id}`}
+                                onClick={close}
+                                to={urlWithTrackingParams({
+                                  baseUrl: `/products/${product.handle}`,
+                                  trackingParams: product.trackingParameters,
+                                  term: debouncedTerm,
+                                })}
+                              >
+                                <span className="rv-search-product__media">
+                                  {image ? (
+                                    <Image
+                                      alt={image.altText || product.title}
+                                      aspectRatio="1/1"
+                                      data={image}
+                                      height={64}
+                                      loading="lazy"
+                                      width={64}
+                                    />
+                                  ) : null}
                                 </span>
-                                {variant?.price ? (
-                                  <span className="rv-search-product__price">
-                                    <Money data={variant.price} />
+                                <span className="rv-search-product__body">
+                                  <span className="rv-search-product__title">
+                                    {product.title}
                                   </span>
-                                ) : null}
-                              </span>
-                            </Link>
-                          </li>
-                        );
-                      })}
+                                  {variant?.price ? (
+                                    <span className="rv-search-product__price">
+                                      <Money data={variant.price} />
+                                    </span>
+                                  ) : null}
+                                </span>
+                              </Link>
+                            </li>
+                          );
+                        })}
                     </ul>
                   </SearchSection>
                 ) : null}
 
-                {items.collections.length ? (
+                {Array.isArray(items.collections) &&
+                items.collections.length ? (
                   <SearchSection title="Collections">
                     <ul className="rv-search-links">
-                      {items.collections.map((collection) => (
+                      {(Array.isArray(items.collections)
+                        ? items.collections
+                        : []
+                      ).map((collection) => (
                         <li key={collection.id}>
                           <Link
                             className="rv-search-link"
@@ -464,40 +526,45 @@ export function SearchPanel() {
                   </SearchSection>
                 ) : null}
 
-                {items.pages.length ? (
+                {Array.isArray(items.pages) && items.pages.length ? (
                   <SearchSection title="Pages">
                     <ul className="rv-search-links">
-                      {items.pages.map((page) => (
-                        <li key={page.id}>
-                          <Link
-                            className="rv-search-link"
-                            id={`rv-search-page-${page.id}`}
-                            onClick={close}
-                            to={urlWithTrackingParams({
-                              baseUrl: `/pages/${page.handle}`,
-                              trackingParams: page.trackingParameters,
-                              term: debouncedTerm,
-                            })}
-                          >
-                            {page.title}
-                          </Link>
-                        </li>
-                      ))}
+                      {(Array.isArray(items.pages) ? items.pages : []).map(
+                        (page) => (
+                          <li key={page.id}>
+                            <Link
+                              className="rv-search-link"
+                              id={`rv-search-page-${page.id}`}
+                              onClick={close}
+                              to={urlWithTrackingParams({
+                                baseUrl: `/pages/${page.handle}`,
+                                trackingParams: page.trackingParameters,
+                                term: debouncedTerm,
+                              })}
+                            >
+                              {page.title}
+                            </Link>
+                          </li>
+                        ),
+                      )}
                     </ul>
                   </SearchSection>
                 ) : null}
 
-                {items.articles.length ? (
+                {Array.isArray(items.articles) && items.articles.length ? (
                   <SearchSection title="Articles">
                     <ul className="rv-search-links">
-                      {items.articles.map((article) => (
+                      {(Array.isArray(items.articles)
+                        ? items.articles
+                        : []
+                      ).map((article) => (
                         <li key={article.id}>
                           <Link
                             className="rv-search-link"
                             id={`rv-search-article-${article.id}`}
                             onClick={close}
                             to={urlWithTrackingParams({
-                              baseUrl: `/blogs/${article.blog.handle}/${article.handle}`,
+                              baseUrl: `/blogs/${article.blog?.handle || 'news'}/${article.handle}`,
                               trackingParams: article.trackingParameters,
                               term: debouncedTerm,
                             })}
