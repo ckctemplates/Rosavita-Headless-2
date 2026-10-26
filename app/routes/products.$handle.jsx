@@ -1,140 +1,246 @@
-import {useLoaderData} from 'react-router';
+import {useLoaderData, useLocation, useNavigate} from 'react-router';
+import {useEffect, useRef, useState} from 'react';
 import {
-  getSelectedProductOptions,
   Analytics,
+  getSelectedProductOptions,
   useOptimisticVariant,
-  getProductOptions,
-  getAdjacentAndFirstAvailableVariants,
   useSelectedOptionInUrlParam,
 } from '@shopify/hydrogen';
-import {ProductPrice} from '~/components/ProductPrice';
-import {ProductImage} from '~/components/ProductImage';
-import {ProductForm} from '~/components/ProductForm';
+import {ProductBuyBox} from '~/components/product/ProductBuyBox';
+import {ProductFaqBand} from '~/components/product/ProductFaqBand';
+import {ProductGallery} from '~/components/product/ProductGallery';
+import {ProductStoryBand} from '~/components/product/ProductStoryBand';
+import {ProductTestimonial} from '~/components/product/ProductTestimonial';
+import {SuperfoodSection} from '~/components/product/SuperfoodSection';
+import {
+  FINAL_CTA_BEHAVIOR,
+  SHIP_LEAD_DAYS,
+} from '~/lib/product-page-constants';
+import {
+  findDefaultVariant,
+  formatShipByDate,
+  getPreferredPlanName,
+  getShipByDate,
+  getVariantPricing,
+  hasSellingPlans,
+  resolveProductContent,
+  stripHtml,
+} from '~/lib/product-page-content';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 
 /**
  * @type {Route.MetaFunction}
  */
 export const meta = ({data}) => {
+  const product = data?.product;
+  if (!product) return [{title: 'Product | Rosavita'}];
+
+  const title = product.seo?.title || product.title || 'Product';
+  const description = stripHtml(
+    product.seo?.description || product.description || product.descriptionHtml,
+  ).slice(0, 155);
+  const image = product.featuredImage?.url;
+
   return [
-    {title: `Hydrogen | ${data?.product.title ?? ''}`},
+    {title: `${title} | Rosavita`},
+    ...(description ? [{name: 'description', content: description}] : []),
     {
       rel: 'canonical',
-      href: `/products/${data?.product.handle}`,
+      href: `/products/${product.handle}`,
     },
+    ...(image
+      ? [
+          {property: 'og:image', content: image},
+          {property: 'og:title', content: `${title} | Rosavita`},
+          ...(description
+            ? [{property: 'og:description', content: description}]
+            : []),
+          {property: 'og:type', content: 'product'},
+        ]
+      : []),
   ];
 };
 
 /**
  * @param {Route.LoaderArgs} args
  */
-export async function loader(args) {
-  // Start fetching non-critical data without blocking time to first byte
-  const deferredData = loadDeferredData(args);
-
-  // Await the critical data required to render initial state of the page
-  const criticalData = await loadCriticalData(args);
-
-  return {...deferredData, ...criticalData};
-}
-
-/**
- * Load data necessary for rendering content above the fold. This is the critical data
- * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
- * @param {Route.LoaderArgs}
- */
-async function loadCriticalData({context, params, request}) {
+export async function loader({context, params, request}) {
   const {handle} = params;
   const {storefront} = context;
 
   if (!handle) {
-    throw new Error('Expected product handle to be defined');
+    throw new Response(null, {status: 404});
   }
 
-  const [{product}] = await Promise.all([
+  const selectedOptions = getSelectedProductOptions(request);
+
+  const [productResult, paymentResult] = await Promise.all([
     storefront.query(PRODUCT_QUERY, {
-      variables: {handle, selectedOptions: getSelectedProductOptions(request)},
+      variables: {handle, selectedOptions},
+      cache: storefront.CacheShort(),
     }),
-    // Add other queries here, so that they are loaded in parallel
+    storefront
+      .query(PAYMENT_SETTINGS_QUERY, {
+        cache: storefront.CacheLong(),
+      })
+      .catch(() => null),
   ]);
 
+  const {product} = productResult || {};
   if (!product?.id) {
     throw new Response(null, {status: 404});
   }
 
-  // The API handle might be localized, so redirect to the localized handle
+  // The API handle might be localized, so redirect to the localized handle.
   redirectIfHandleIsLocalized(request, {handle, data: product});
+
+  const initialVariant = selectedOptions.length
+    ? product.selectedOrFirstAvailableVariant
+    : findDefaultVariant(product);
 
   return {
     product,
+    initialVariant:
+      initialVariant ||
+      product.selectedOrFirstAvailableVariant ||
+      product.variants?.nodes?.[0] ||
+      null,
+    paymentSettings: paymentResult?.shop?.paymentSettings || null,
+    shipByDate: formatShipByDate(getShipByDate(SHIP_LEAD_DAYS)),
   };
-}
-
-/**
- * Load data for rendering content below the fold. This data is deferred and will be
- * fetched after the initial page load. If it's unavailable, the page should still 200.
- * Make sure to not throw any errors here, as it will cause the page to 500.
- * @param {Route.LoaderArgs}
- */
-function loadDeferredData({context, params}) {
-  // Put any API calls that is not critical to be available on first page render
-  // For example: product reviews, product recommendations, social feeds.
-
-  return {};
 }
 
 export default function Product() {
   /** @type {LoaderReturnData} */
-  const {product} = useLoaderData();
+  const {product, initialVariant, paymentSettings, shipByDate} =
+    useLoaderData();
 
-  // Optimistically selects a variant with given available variant information
-  const selectedVariant = useOptimisticVariant(
-    product.selectedOrFirstAvailableVariant,
-    getAdjacentAndFirstAvailableVariants(product),
+  const selectedVariant = useOptimisticVariant(initialVariant, product);
+  const content = resolveProductContent(product);
+  const hasPlans = hasSellingPlans(product);
+  const preferredPlanName = getPreferredPlanName(product);
+
+  const [purchaseMode, setPurchaseMode] = useState(
+    hasPlans ? 'subscribe' : 'once',
   );
 
-  // Sets the search param to the selected variant without navigation
-  // only when no search params are set in the url
-  useSelectedOptionInUrlParam(selectedVariant.selectedOptions);
+  useEffect(() => {
+    if (!hasPlans) setPurchaseMode('once');
+  }, [hasPlans]);
 
-  // Get the product options array
-  const productOptions = getProductOptions({
-    ...product,
-    selectedOrFirstAvailableVariant: selectedVariant,
+  // Keep the selected variant shareable in the URL. The hook merges with any
+  // unrelated query params instead of deleting them.
+  useSelectedOptionInUrlParam(selectedVariant?.selectedOptions || []);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const addToCartRef = useRef(null);
+  const buySectionRef = useRef(null);
+
+  const pricing = selectedVariant
+    ? getVariantPricing(selectedVariant, purchaseMode, preferredPlanName)
+    : null;
+
+  const handleSelectVariant = (variant) => {
+    if (!variant?.selectedOptions?.length) return;
+    const params = new URLSearchParams(location.search);
+    for (const option of variant.selectedOptions) {
+      params.set(option.name, option.value);
+    }
+    navigate(
+      {search: params.toString()},
+      {replace: true, preventScrollReset: true},
+    );
+  };
+
+  const handleFinalCta = () => {
+    if (FINAL_CTA_BEHAVIOR === 'add-to-cart') {
+      addToCartRef.current?.click();
+      return;
+    }
+
+    buySectionRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+    window.setTimeout(() => {
+      addToCartRef.current?.focus({preventScroll: true});
+    }, 450);
+  };
+
+  const galleryImages = product.images?.nodes?.length
+    ? product.images.nodes
+    : product.featuredImage
+      ? [product.featuredImage]
+      : [];
+
+  const jsonLd = buildProductJsonLd({
+    product,
+    selectedVariant,
+    pricing,
+    content,
   });
 
-  const {title, descriptionHtml} = product;
-
   return (
-    <div className="product">
-      <ProductImage image={selectedVariant?.image} />
-      <div className="product-main">
-        <h1>{title}</h1>
-        <ProductPrice
-          price={selectedVariant?.price}
-          compareAtPrice={selectedVariant?.compareAtPrice}
-        />
-        <br />
-        <ProductForm
-          productOptions={productOptions}
-          selectedVariant={selectedVariant}
-        />
-        <br />
-        <br />
-        <p>
-          <strong>Description</strong>
-        </p>
-        <br />
-        <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
-        <br />
-      </div>
+    <div
+      className="rv-pdp"
+      style={{
+        '--rv-pdp-accent': content.theme.accent,
+        '--rv-pdp-tint': content.theme.tint,
+      }}
+    >
+      <script
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
+        }}
+        type="application/ld+json"
+      />
+
+      <section className="rv-pdp__buy" ref={buySectionRef}>
+        <div className="rv-pdp-container rv-pdp__buy-grid">
+          <div className="rv-pdp__gallery-column">
+            <ProductGallery
+              images={galleryImages}
+              title={product.title}
+            />
+            <ProductTestimonial review={content.featuredReview} />
+          </div>
+
+          <ProductBuyBox
+            addToCartRef={addToCartRef}
+            content={content}
+            hasPlans={hasPlans}
+            onSelectVariant={handleSelectVariant}
+            onTogglePurchaseMode={() =>
+              setPurchaseMode((mode) =>
+                mode === 'subscribe' ? 'once' : 'subscribe',
+              )
+            }
+            paymentSettings={paymentSettings}
+            preferredPlanName={preferredPlanName}
+            pricing={pricing}
+            product={product}
+            purchaseMode={purchaseMode}
+            selectedVariant={selectedVariant}
+            shipByDate={shipByDate}
+          />
+        </div>
+      </section>
+
+      <ProductStoryBand sections={content.storySections} />
+      <SuperfoodSection section={content.superfood} />
+      <ProductFaqBand faqs={content.faqs} onCtaClick={handleFinalCta} />
+
       <Analytics.ProductView
         data={{
           products: [
             {
               id: product.id,
               title: product.title,
-              price: selectedVariant?.price.amount || '0',
+              price:
+                pricing?.price?.amount ||
+                selectedVariant?.price?.amount ||
+                '0',
               vendor: product.vendor,
               variantId: selectedVariant?.id || '',
               variantTitle: selectedVariant?.title || '',
@@ -147,16 +253,55 @@ export default function Product() {
   );
 }
 
+function buildProductJsonLd({product, selectedVariant, pricing, content}) {
+  const description = content.intro || stripHtml(product.description).slice(0, 400);
+  const offer = selectedVariant
+    ? {
+        '@type': 'Offer',
+        priceCurrency:
+          pricing?.price?.currencyCode ||
+          selectedVariant.price?.currencyCode ||
+          'USD',
+        price: pricing?.price?.amount || selectedVariant.price?.amount,
+        availability: selectedVariant.availableForSale
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+        url: `/products/${product.handle}`,
+      }
+    : undefined;
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: content.displayTitle || product.title,
+    image: (product.images?.nodes || []).map((image) => image.url),
+    description,
+    ...(selectedVariant?.sku ? {sku: selectedVariant.sku} : {}),
+    ...(product.vendor
+      ? {brand: {'@type': 'Brand', name: product.vendor}}
+      : {}),
+    ...(offer ? {offers: offer} : {}),
+    ...(content.rating && content.ratingCount
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: content.rating,
+            reviewCount: content.ratingCount,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
+  };
+}
+
 const PRODUCT_VARIANT_FRAGMENT = `#graphql
   fragment ProductVariant on ProductVariant {
-    availableForSale
-    compareAtPrice {
-      amount
-      currencyCode
-    }
     id
+    title
+    availableForSale
+    sku
     image {
-      __typename
       id
       url
       altText
@@ -167,19 +312,55 @@ const PRODUCT_VARIANT_FRAGMENT = `#graphql
       amount
       currencyCode
     }
-    product {
-      title
-      handle
+    compareAtPrice {
+      amount
+      currencyCode
     }
     selectedOptions {
       name
       value
     }
-    sku
-    title
-    unitPrice {
-      amount
-      currencyCode
+    product {
+      title
+      handle
+    }
+    metafields(identifiers: [
+      {namespace: "custom", key: "bundle_title"}
+      {namespace: "custom", key: "bundle_subtitle"}
+      {namespace: "custom", key: "bundle_badge"}
+      {namespace: "custom", key: "free_shipping"}
+    ]) {
+      namespace
+      key
+      type
+      value
+    }
+    sellingPlanAllocations(first: 10) {
+      nodes {
+        sellingPlan {
+          id
+          name
+          options {
+            name
+            value
+          }
+          recurringDeliveries
+        }
+        priceAdjustments {
+          price {
+            amount
+            currencyCode
+          }
+          compareAtPrice {
+            amount
+            currencyCode
+          }
+          perDeliveryPrice {
+            amount
+            currencyCode
+          }
+        }
+      }
     }
   }
 `;
@@ -187,46 +368,115 @@ const PRODUCT_VARIANT_FRAGMENT = `#graphql
 const PRODUCT_FRAGMENT = `#graphql
   fragment Product on Product {
     id
+    handle
     title
     vendor
-    handle
-    descriptionHtml
     description
-    encodedVariantExistence
-    encodedVariantAvailability
+    descriptionHtml
+    availableForSale
+    featuredImage {
+      id
+      url
+      altText
+      width
+      height
+    }
+    images(first: 20) {
+      nodes {
+        id
+        url
+        altText
+        width
+        height
+      }
+    }
     options {
       name
       optionValues {
         name
-        firstSelectableVariant {
-          ...ProductVariant
-        }
-        swatch {
-          color
-          image {
-            previewImage {
-              url
-            }
-          }
-        }
       }
     }
     selectedOrFirstAvailableVariant(selectedOptions: $selectedOptions, ignoreUnknownOptions: true, caseInsensitiveMatch: true) {
       ...ProductVariant
     }
-    adjacentVariants (selectedOptions: $selectedOptions) {
-      ...ProductVariant
+    variants(first: 100) {
+      nodes {
+        ...ProductVariant
+      }
+    }
+    sellingPlanGroups(first: 5) {
+      nodes {
+        name
+        options {
+          name
+          values
+        }
+        sellingPlans(first: 10) {
+          nodes {
+            id
+            name
+            description
+            options {
+              name
+              value
+            }
+            recurringDeliveries
+            priceAdjustments {
+              adjustmentValue {
+                ... on SellingPlanPercentagePriceAdjustment {
+                  adjustmentPercentage
+                }
+                ... on SellingPlanFixedAmountPriceAdjustment {
+                  adjustmentAmount {
+                    amount
+                    currencyCode
+                  }
+                }
+                ... on SellingPlanFixedPriceAdjustment {
+                  price {
+                    amount
+                    currencyCode
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    metafields(identifiers: [
+      {namespace: "custom", key: "display_title"}
+      {namespace: "custom", key: "subheading"}
+      {namespace: "custom", key: "short_description"}
+      {namespace: "custom", key: "benefits"}
+      {namespace: "custom", key: "featured_review"}
+      {namespace: "custom", key: "accordions"}
+      {namespace: "custom", key: "story_sections"}
+      {namespace: "custom", key: "superfood_section"}
+      {namespace: "custom", key: "faqs"}
+      {namespace: "custom", key: "guarantee"}
+      {namespace: "custom", key: "accent_color"}
+      {namespace: "custom", key: "section_tint"}
+      {namespace: "custom", key: "rating_value"}
+      {namespace: "custom", key: "rating_count"}
+      {namespace: "reviews", key: "rating"}
+      {namespace: "reviews", key: "rating_count"}
+    ]) {
+      namespace
+      key
+      type
+      value
     }
     seo {
-      description
       title
+      description
     }
   }
   ${PRODUCT_VARIANT_FRAGMENT}
 `;
 
 const PRODUCT_QUERY = `#graphql
-  query Product(
+  query ProductPage(
     $country: CountryCode
     $handle: String!
     $language: LanguageCode
@@ -237,6 +487,17 @@ const PRODUCT_QUERY = `#graphql
     }
   }
   ${PRODUCT_FRAGMENT}
+`;
+
+const PAYMENT_SETTINGS_QUERY = `#graphql
+  query ProductPagePaymentSettings {
+    shop {
+      paymentSettings {
+        acceptedCardBrands
+        supportedDigitalWallets
+      }
+    }
+  }
 `;
 
 /** @typedef {import('./+types/products.$handle').Route} Route */
