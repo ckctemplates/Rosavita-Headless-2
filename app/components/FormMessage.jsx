@@ -22,7 +22,7 @@ export const FormMessage = forwardRef(function FormMessage(
       className={`rv-contact__message rv-contact__message--${type} ${className}`.trim()}
       role={isSuccess ? 'status' : 'alert'}
       aria-live={isSuccess ? 'polite' : 'assertive'}
-      tabIndex={isSuccess ? -1 : undefined}
+      tabIndex={-1}
     >
       <span className="rv-contact__message-icon" aria-hidden="true">
         {isSuccess ? <CheckIcon /> : <AlertIcon />}
