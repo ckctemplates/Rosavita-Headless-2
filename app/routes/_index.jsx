@@ -20,7 +20,7 @@ const PRODUCT_LINKS = [
     key: 'beetroot',
     match: ['organic-beetroot-capsules', 'beetroot'],
     fallback:
-      '/products/rosabella-organic-beetroot-capsules-1300mg-for-blood-flow-heart-health-bogo-sub',
+      '/products/beetroot',
   },
   {
     key: 'electrolyte',
