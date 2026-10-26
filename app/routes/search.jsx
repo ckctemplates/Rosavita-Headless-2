@@ -1,10 +1,14 @@
-import {useLoaderData, useSearchParams} from 'react-router';
+import {useFetcher, useLoaderData, useSearchParams} from 'react-router';
 import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 import {SearchPageForm} from '~/components/SearchPageForm';
 import {SearchFilters} from '~/components/SearchFilters';
 import {SearchResultCard, SearchPageTile} from '~/components/SearchResultCard';
-import {getEmptyPredictiveSearchResult} from '~/lib/search';
-import {useRef, useState} from 'react';
+import {
+  findFilterForInput,
+  getEmptyPredictiveSearchResult,
+  parseFilterInput,
+} from '~/lib/search';
+import {useEffect, useRef, useState} from 'react';
 
 export const RESULTS_PER_PAGE = 24;
 export const SHOW_QUICK_ADD = true;
@@ -16,10 +20,7 @@ export const meta = ({data}) => {
   const title = term
     ? `Search results for “${term}” | Rosavita`
     : `Search | Rosavita`;
-  return [
-    {title},
-    {name: 'robots', content: 'noindex, follow'},
-  ];
+  return [{title}, {name: 'robots', content: 'noindex, follow'}];
 };
 
 export async function loader({request, context}) {
@@ -43,12 +44,15 @@ export async function loader({request, context}) {
     return await regularSearch({request, context});
   } catch (error) {
     console.error(error);
-    const term = String(url.searchParams.get('q') || '').trim().slice(0, 100);
+    const term = String(url.searchParams.get('q') || '')
+      .trim()
+      .slice(0, 100);
     return {
       type: 'regular',
       term,
       result: getEmptySearchResult(),
       filters: [],
+      appliedFilters: [],
       error: error.message,
     };
   }
@@ -88,14 +92,20 @@ function mapSort(sortBy) {
 }
 
 export default function SearchPage() {
-  const {type, term, result, filters = [], error} = useLoaderData();
+  const {
+    type,
+    term,
+    result,
+    filters = [],
+    appliedFilters = [],
+    error,
+  } = useLoaderData();
   const [searchParams] = useSearchParams();
   const sortBy = searchParams.get('sort_by') || 'relevance';
   const filterParams = searchParams.getAll('filter');
   const hasFilters = filterParams.length > 0;
-  const sortByPrice = sortBy === 'price-ascending' || sortBy === 'price-descending';
-
-  if (type === 'predictive') return null;
+  const sortByPrice =
+    sortBy === 'price-ascending' || sortBy === 'price-descending';
 
   const products = result?.items?.products?.nodes || [];
   const pages = result?.items?.pages?.nodes || [];
@@ -111,33 +121,53 @@ export default function SearchPage() {
   const [moreNodes, setMoreNodes] = useState([]);
   const [nextCursor, setNextCursor] = useState(pageInfo.endCursor);
   const [hasNext, setHasNext] = useState(pageInfo.hasNextPage);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loadMoreRef = useRef(null);
+  const loadMoreFetcher = useFetcher({key: 'rv-search-page'});
+  const lastPageRef = useRef(null);
+  const requestedKeyRef = useRef(null);
+  const isLoadingMore = loadMoreFetcher.state !== 'idle';
+
+  // Reset pagination whenever the query (term, filters, sort) changes.
+  const searchKey = searchParams.toString();
+  useEffect(() => {
+    setMoreNodes([]);
+    setNextCursor(pageInfo.endCursor);
+    setHasNext(pageInfo.hasNextPage);
+    lastPageRef.current = null;
+    requestedKeyRef.current = null;
+  }, [searchKey, pageInfo.endCursor, pageInfo.hasNextPage]);
 
   const allProducts = [...displayProducts, ...moreNodes];
 
-  const loadMore = async () => {
-    if (!nextCursor || isLoadingMore) return;
-    setIsLoadingMore(true);
-    try {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('cursor', nextCursor);
-      const res = await fetch(`/search?${params.toString()}`, {
-        headers: {accept: 'application/json'},
-      });
-      if (!res.ok) throw new Error('Failed to load more');
-      const data = await res.json();
-      const nodes = data?.items?.products?.nodes || [];
-      const pi = data?.items?.products?.pageInfo || {};
-      setMoreNodes((prev) => [...prev, ...nodes]);
-      setNextCursor(pi.endCursor || null);
-      setHasNext(pi.hasNextPage || false);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoadingMore(false);
+  useEffect(() => {
+    const page = loadMoreFetcher.data;
+    if (
+      loadMoreFetcher.state !== 'idle' ||
+      !page ||
+      page === lastPageRef.current
+    ) {
+      return;
     }
+    lastPageRef.current = page;
+
+    // Ignore responses for a previous query after filters/sort changed.
+    if (requestedKeyRef.current !== searchKey) return;
+
+    const nodes = page?.result?.items?.products?.nodes || [];
+    const pi = page?.result?.items?.products?.pageInfo || {};
+    setMoreNodes((prev) => [...prev, ...nodes]);
+    setNextCursor(pi.endCursor || null);
+    setHasNext(pi.hasNextPage || false);
+  }, [loadMoreFetcher.data, loadMoreFetcher.state, searchKey]);
+
+  const loadMore = () => {
+    if (!nextCursor || isLoadingMore) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('cursor', nextCursor);
+    requestedKeyRef.current = searchKey;
+    loadMoreFetcher.load(`/search?${params.toString()}`);
   };
+
+  if (type === 'predictive') return null;
 
   return (
     <div className="rv-searchpage">
@@ -145,11 +175,16 @@ export default function SearchPage() {
         <h1 className="rv-searchpage__title">Search results</h1>
         <SearchPageForm term={term} />
       </div>
-      <SearchFilters filters={filters} productFilters={result?.productFilters || []} />
+      <SearchFilters filters={filters} appliedFilters={appliedFilters} />
       {error ? <p className="rv-searchpage__error">{error}</p> : null}
       {!term ? (
-        <p className="rv-searchpage__empty">Start typing to search our store.</p>
-      ) : total === 0 && allProducts.length === 0 && displayPages.length === 0 && displayArticles.length === 0 ? (
+        <p className="rv-searchpage__empty">
+          Start typing to search our store.
+        </p>
+      ) : total === 0 &&
+        allProducts.length === 0 &&
+        displayPages.length === 0 &&
+        displayArticles.length === 0 ? (
         <p className="rv-searchpage__empty">No results found.</p>
       ) : (
         <>
@@ -158,7 +193,11 @@ export default function SearchPage() {
           </p>
           <div className="rv-searchpage__grid">
             {allProducts.map((product, idx) => (
-              <SearchResultCard key={product.id} product={product} loading={idx < 4 ? 'eager' : 'lazy'} />
+              <SearchResultCard
+                key={product.id}
+                product={product}
+                loading={idx < 4 ? 'eager' : 'lazy'}
+              />
             ))}
             {displayPages.map((page) => (
               <SearchPageTile key={page.id} item={page} />
@@ -197,20 +236,81 @@ export default function SearchPage() {
   );
 }
 
+function normalizeConnection(connection) {
+  const nodes = Array.isArray(connection?.nodes)
+    ? connection.nodes
+    : Array.isArray(connection)
+      ? connection
+      : [];
+
+  return {
+    nodes,
+    totalCount:
+      typeof connection?.totalCount === 'number'
+        ? connection.totalCount
+        : nodes.length,
+    pageInfo: connection?.pageInfo || {
+      hasNextPage: false,
+      endCursor: null,
+    },
+  };
+}
+
+function formatFilterValue(input) {
+  if (!input || typeof input !== 'object') return 'Filter';
+
+  if ('available' in input) {
+    return input.available ? 'In stock' : 'Out of stock';
+  }
+
+  if (input.price) {
+    const {min, max} = input.price;
+    if (min != null && max != null) return `${min} – ${max}`;
+    if (min != null) return `From ${min}`;
+    if (max != null) return `Up to ${max}`;
+    return 'Price';
+  }
+
+  const first = Object.values(input)[0];
+  if (first && typeof first === 'object') {
+    if (first.value != null) return String(first.value);
+    const nested = Object.values(first).find(
+      (entry) => typeof entry !== 'object',
+    );
+    return nested != null ? String(nested) : 'Filter';
+  }
+
+  return first != null ? String(first) : 'Filter';
+}
+
+function buildAppliedFilters(inputs, filters) {
+  return inputs.map((input) => {
+    const {filter, value} = findFilterForInput(input, filters);
+
+    return {
+      filterId: filter?.id ?? null,
+      label: filter?.label ?? '',
+      valueLabel: value?.label ?? formatFilterValue(input),
+      input,
+    };
+  });
+}
+
 async function regularSearch({request, context}) {
   const {storefront} = context;
   const url = new URL(request.url);
-  const term = String(url.searchParams.get('q') || '').trim().slice(0, 100);
+  const term = String(url.searchParams.get('q') || '')
+    .trim()
+    .slice(0, 100);
   const sortBy = url.searchParams.get('sort_by') || 'relevance';
-  const productFilters = parseFilters(url);
+  const appliedInputs = parseFilters(url);
   const cursor = url.searchParams.get('cursor');
   const {sortKey, reverse} = mapSort(sortBy);
   const variables = getPaginationVariables(request, {pageBy: RESULTS_PER_PAGE});
   const first = variables.first || RESULTS_PER_PAGE;
   const after = cursor || variables.endCursor || null;
 
-  const isJsonRequest = request.headers.get('accept')?.includes('application/json');
-  const shouldFetchContent = productFilters.length === 0 && sortBy === 'relevance';
+  const fetchContent = appliedInputs.length === 0 && sortBy === 'relevance';
 
   if (!term) {
     return {
@@ -218,7 +318,7 @@ async function regularSearch({request, context}) {
       term: '',
       result: getEmptySearchResult(),
       filters: [],
-      total: 0,
+      appliedFilters: [],
     };
   }
 
@@ -231,24 +331,31 @@ async function regularSearch({request, context}) {
       after,
       sortKey,
       reverse,
-      productFilters,
-      types: shouldFetchContent ? ['PRODUCT', 'PAGE', 'ARTICLE'] : ['PRODUCT'],
+      productFilters: appliedInputs,
+      fetchContent,
     },
   });
 
-  if (isJsonRequest) {
-    return {
-      items: {
-        products: data.products || {nodes: [], pageInfo: {hasNextPage: false, endCursor: null}},
-      },
-      total: data.products?.pageInfo?.hasNextPage ? (data.products?.nodes?.length || 0) + (RESULTS_PER_PAGE * 10) : (data.products?.nodes?.length || 0),
-    };
-  }
-
-  const products = data.products || {nodes: [], pageInfo: {hasNextPage: false, endCursor: null}};
-  const pages = shouldFetchContent ? data.pages || {nodes: []} : {nodes: []};
-  const articles = shouldFetchContent ? data.articles || {nodes: []} : {nodes: []};
-  const total = products.nodes.length + pages.nodes.length + articles.nodes.length;
+  const products = normalizeConnection(data.products);
+  const pages = fetchContent
+    ? normalizeConnection(data.pages)
+    : normalizeConnection(null);
+  const articles = fetchContent
+    ? normalizeConnection(data.articles)
+    : normalizeConnection(null);
+  const availableFilters = Array.isArray(data.products?.productFilters)
+    ? data.products.productFilters.map((filter) => ({
+        ...filter,
+        values: (filter.values || []).map((value) => ({
+          ...value,
+          input: parseFilterInput(value.input),
+        })),
+      }))
+    : [];
+  const appliedFilters = buildAppliedFilters(appliedInputs, availableFilters);
+  const total =
+    products.totalCount +
+    (fetchContent ? pages.totalCount + articles.totalCount : 0);
 
   return {
     type: 'regular',
@@ -257,8 +364,8 @@ async function regularSearch({request, context}) {
       total,
       items: {products, pages, articles},
     },
-    filters: data.searchFilters?.filters || [],
-    productFilters: data.productFilters || [],
+    filters: availableFilters,
+    appliedFilters,
   };
 }
 
@@ -271,7 +378,9 @@ async function predictiveSearch({request, context}) {
     limit,
     term,
     limitScope: 'EACH',
-    types: ['PRODUCT', 'QUERY', 'COLLECTION', 'PAGE', 'ARTICLE'],
+    // Pages and articles require the unauthenticated_read_content scope.
+    // Keep predictive search limited to resources this storefront can read.
+    types: ['PRODUCT', 'QUERY', 'COLLECTION'],
   };
 
   if (!term) {
@@ -286,7 +395,9 @@ async function predictiveSearch({request, context}) {
     const data = await storefront.query(PREDICTIVE_SEARCH_QUERY, {
       variables,
     });
-    const result = predictiveSearchResult({data: data?.predictiveSearch || data, term});
+    const result = predictiveSearchResult({
+      data: data?.predictiveSearch || data,
+    });
     return {
       type: 'predictive',
       term,
@@ -303,7 +414,7 @@ async function predictiveSearch({request, context}) {
   }
 }
 
-function predictiveSearchResult({data, term}) {
+function predictiveSearchResult({data}) {
   if (!data) {
     return getEmptyPredictiveSearchResult();
   }
@@ -311,8 +422,8 @@ function predictiveSearchResult({data, term}) {
   const queries = Array.isArray(data?.queries?.nodes)
     ? data.queries.nodes
     : Array.isArray(data?.queries)
-    ? data.queries
-    : [];
+      ? data.queries
+      : [];
 
   const products = data.products?.nodes || data.products || [];
   const collections = data.collections?.nodes || data.collections || [];
@@ -333,7 +444,7 @@ function predictiveSearchResult({data, term}) {
       collections: {nodes: collections},
       pages: {nodes: pages},
       articles: {nodes: articles},
-      queries: queries,
+      queries,
     },
   };
 }
@@ -458,15 +569,6 @@ const SEARCH_ARTICLE_FRAGMENT = `#graphql
   }
 `;
 
-const PAGE_INFO_FRAGMENT = `#graphql
-  fragment PageInfoFragment on PageInfo {
-    hasNextPage
-    hasPreviousPage
-    startCursor
-    endCursor
-  }
-`;
-
 export const SEARCH_QUERY = `#graphql
   query RegularSearch(
     $country: CountryCode
@@ -477,47 +579,8 @@ export const SEARCH_QUERY = `#graphql
     $sortKey: SearchSortKeys
     $reverse: Boolean
     $productFilters: [ProductFilter!]
-    $types: [SearchType!]
+    $fetchContent: Boolean!
   ) @inContext(country: $country, language: $language) {
-    productFilters: search(
-      query: $term
-      types: [PRODUCT]
-      productFilters: $productFilters
-      first: 1
-      sortKey: $sortKey
-      reverse: $reverse
-      unavailableProducts: LAST
-    ) {
-      productFilters {
-        id
-        label
-        type
-        values {
-          id
-          label
-          count
-          input
-        }
-      }
-    }
-    searchFilters: search(
-      query: $term
-      types: [PRODUCT]
-      first: 1
-      unavailableProducts: LAST
-    ) {
-      filters {
-        id
-        label
-        type
-        values {
-          id
-          label
-          count
-          input
-        }
-      }
-    }
     products: search(
       after: $after
       first: $first
@@ -537,20 +600,36 @@ export const SEARCH_QUERY = `#graphql
         hasNextPage
         endCursor
       }
+      totalCount
+      productFilters {
+        id
+        label
+        type
+        values {
+          id
+          label
+          count
+          input
+        }
+      }
     }
-    pages: search(query: $term, types: [PAGE], first: 100) {
+    pages: search(query: $term, types: [PAGE], first: 100)
+      @include(if: $fetchContent) {
       nodes {
         ...on Page {
           ...SearchPage
         }
       }
+      totalCount
     }
-    articles: search(query: $term, types: [ARTICLE], first: 100) {
+    articles: search(query: $term, types: [ARTICLE], first: 100)
+      @include(if: $fetchContent) {
       nodes {
         ...on Article {
           ...SearchArticle
         }
       }
+      totalCount
     }
   }
   ${SEARCH_PRODUCT_FRAGMENT}
@@ -573,65 +652,39 @@ const PREDICTIVE_SEARCH_QUERY = `#graphql
       query: $term
       types: $types
     ) {
-      articles {
-        nodes {
-          id
-          handle
-          title
-          trackingParameters
-        }
-      }
       collections {
-        nodes {
-          id
-          handle
-          title
-          trackingParameters
-        }
-      }
-      pages {
-        nodes {
-          id
-          handle
-          title
-          trackingParameters
-        }
+        id
+        handle
+        title
+        trackingParameters
       }
       products {
-        nodes {
+        id
+        handle
+        title
+        trackingParameters
+        selectedOrFirstAvailableVariant(
+          selectedOptions: []
+          ignoreUnknownOptions: true
+          caseInsensitiveMatch: true
+        ) {
           id
-          handle
-          title
-          trackingParameters
-          selectedOrFirstAvailableVariant(
-            selectedOptions: []
-            ignoreUnknownOptions: true
-            caseInsensitiveMatch: true
-          ) {
-            id
-            image {
-              url
-              altText
-              width
-              height
-            }
-            price {
-              amount
-              currencyCode
-            }
+          image {
+            url
+            altText
+            width
+            height
+          }
+          price {
+            amount
+            currencyCode
           }
         }
       }
       queries {
-        nodes {
-          id
-          attributes {
-            key
-            value
-          }
-          styledText
-          trackingParameters
-        }
+        text
+        styledText
+        trackingParameters
       }
     }
   }

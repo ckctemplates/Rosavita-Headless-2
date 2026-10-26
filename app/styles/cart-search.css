@@ -974,6 +974,21 @@
   height: 14px;
 }
 
+.rv-search-suggestion-icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.rv-search-suggestion-text {
+  display: inline;
+}
+
+.rv-search-suggestion mark {
+  background: transparent;
+  color: var(--rv-green);
+  font-weight: 700;
+}
+
 .rv-search-suggestion:hover {
   border-color: var(--rv-green);
   background: #f1f4f2;
