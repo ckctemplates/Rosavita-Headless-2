@@ -68,26 +68,40 @@ export async function action({request, context}) {
     );
   }
 
-  const formData = await request.formData();
-  const result = await processContactSubmission({
-    request,
-    env: context.env,
-    formData,
-  });
+  try {
+    const formData = await request.formData();
+    const result = await processContactSubmission({
+      request,
+      env: context.env,
+      formData,
+    });
 
-  if (result.status === 'success') {
-    return redirect('/pages/contact?contact_posted=true');
+    if (result.status === 'success') {
+      return redirect('/pages/contact?contact_posted=true');
+    }
+
+    const status =
+      result.errors?.form === CONTACT_RATE_LIMIT_MESSAGE ? 429 : 400;
+
+    return data(
+      {
+        errors: result.errors || {form: CONTACT_ERROR_MESSAGE},
+        values: result.values || {},
+      },
+      {status},
+    );
+  } catch (error) {
+    // Never leak technical details to the shopper.
+    console.error(
+      `[contact] Unexpected submission error: ${
+        error instanceof Error ? error.message : 'unknown error'
+      }`,
+    );
+    return data(
+      {errors: {form: CONTACT_ERROR_MESSAGE}, values: {}},
+      {status: 500},
+    );
   }
-
-  const status = result.errors?.form === CONTACT_RATE_LIMIT_MESSAGE ? 429 : 400;
-
-  return data(
-    {
-      errors: result.errors || {form: CONTACT_ERROR_MESSAGE},
-      values: result.values || {},
-    },
-    {status},
-  );
 }
 
 export default function ContactPage() {
