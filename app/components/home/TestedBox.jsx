@@ -5,7 +5,7 @@ export function TestedBox() {
     <section className="rv-tested">
       <div className="rv-container">
         <div className="rv-tested__box">
-          <h3>TESTED, VERIFIED, AND GUARANTEED</h3>
+          <h3>Tested, verified, and guaranteed</h3>
           <p>
             Every batch is third-party tested, with a Certificate of Analysis
             available on request. Every order is covered by our 90-day
@@ -21,7 +21,7 @@ export function TestedBox() {
               SEE THE REVIEWS &gt;
             </Link>
             <Link
-              to="/pages/how-our-ingredients-are-tested"
+              to="/pages/ingrdients"
               className="rv-btn rv-btn--outline rv-btn--science"
               prefetch="intent"
             >

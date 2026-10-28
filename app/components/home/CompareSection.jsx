@@ -33,7 +33,7 @@ function XIcon() {
   );
 }
 
-const rosabellaPoints = [
+const rosavitaPoints = [
   'Made with moringa, a nutrient-dense whole-food plant traditionally valued for its rich nutritional profile*',
   'Supports energy, calm, and overall wellness in one simple daily supplement*',
   'Clean, caffeine-free formula with B vitamins and iron to support natural energy*',
@@ -54,7 +54,7 @@ export function CompareSection() {
     <section className="rv-compare">
       <div className="rv-container rv-container--narrow">
         <h2 className="rv-compare__title">
-          WHY OVER 1,000,000 CUSTOMERS CHOOSE ROSABELLA
+          WHY OVER 1,000,000 CUSTOMERS CHOOSE ROSAVITA
         </h2>
 
         <div className="rv-compare__wrapper">
@@ -62,14 +62,14 @@ export function CompareSection() {
             <div className="rv-compare__inner">
               <img
                 className="rv-compare__logo"
-                src="/images/compare-rosabella.webp"
-                alt="Rosabella"
+                src="https://cdn.shopify.com/s/files/1/0757/8822/2631/files/part2.jpg?v=1792937753"
+                alt="Rosavita"
                 width="428"
                 height="456"
                 loading="lazy"
               />
               <ul className="rv-compare__list">
-                {rosabellaPoints.map((point) => (
+                {rosavitaPoints.map((point) => (
                   <li className="rv-compare__item" key={point}>
                     <CheckIcon />
                     <span>{point}</span>
@@ -87,7 +87,7 @@ export function CompareSection() {
             <div className="rv-compare__inner">
               <img
                 className="rv-compare__logo"
-                src="/images/compare-others.png"
+                src="https://cdn.shopify.com/s/files/1/0757/8822/2631/files/suplements.webp?v=1792946008"
                 alt=""
                 width="360"
                 height="456"

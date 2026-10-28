@@ -4,7 +4,7 @@ const REQUIRED_PRODUCTS = [
   {
     key: 'moringa',
     title: 'MORINGA POWDER CAPSULES',
-    handle: 'rosabella-moringa-powder-capsules-np',
+    handle: 'rosavita-moringa-powder-capsules-np',
     match: ['moringa'],
     tags: ['30 DAY SUPPLY', '60 CAPSULES'],
     subtitle: 'Ultimate Green Superfood',
@@ -13,8 +13,7 @@ const REQUIRED_PRODUCTS = [
   {
     key: 'beetroot',
     title: 'ORGANIC BEETROOT CAPSULES',
-    handle:
-      'rosabella-organic-beetroot-capsules-1300mg-for-blood-flow-heart-health-bogo-sub',
+    handle: 'beetroot',
     match: ['beetroot'],
     tags: ['30 DAY SUPPLY', '60 CAPSULES'],
     subtitle: "Nature's Circulation Support",
@@ -23,18 +22,18 @@ const REQUIRED_PRODUCTS = [
   {
     key: 'electrolyte',
     title: 'ELECTROLYTE DRINK POWDER',
-    handle: 'rosabella-electrolyte-drink-powder-b1',
+    handle: 'rosavita-electrolyte-drink-powder-b1',
     match: ['electrolyte'],
-    tags: ['30 SERVINGS', '8 KEY NUTRIENTS'],
+    tags: ['30 DAY SUPPLY', '30 SERVINGS'],
     subtitle: 'Clean Everyday Hydration',
     image: '/images/product-electrolyte.webp',
   },
   {
     key: 'gummies',
     title: 'MORINGA GUMMIES',
-    handle: 'rosabella-moringa-gummies-bogo-np',
+    handle: 'rosavita-moringa-gummies-sub',
     match: ['gumm'],
-    tags: ['30 DAY SUPPLY', '60 GUMMIES'],
+    tags: ['30 DAY SUPPLY', '60 CAPSULES'],
     subtitle: 'Your Daily Green Superfood',
     image: '/images/product-gummies.webp',
   },

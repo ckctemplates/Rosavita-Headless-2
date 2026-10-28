@@ -1,11 +1,26 @@
 const badges = [
-  {src: '/images/badge-non-gmo.png', label: 'Non-GMO'},
-  {src: '/images/badge-gluten-free.png', label: 'Gluten Free'},
-  {src: '/images/badge-no-additives.png', label: 'No Additives'},
-  {src: '/images/badge-freshly-harvested.png', label: 'Freshly Harvested'},
-  {src: '/images/badge-pure-potent.png', label: 'Pure & Potent'},
   {
-    src: '/images/badge-made-in-usa.png',
+    src: 'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/logo1.avif?v=1792944504',
+    label: 'Non-GMO',
+  },
+  {
+    src: 'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/logo2.avif?v=1792944514',
+    label: 'Gluten Free',
+  },
+  {
+    src: 'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/logo3.avif?v=1792944523',
+    label: 'No Additives',
+  },
+  {
+    src: 'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/logo4.avif?v=1792944532',
+    label: 'Freshly Harvested',
+  },
+  {
+    src: 'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/logo5.avif?v=1792944542',
+    label: 'Pure & Potent',
+  },
+  {
+    src: 'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/logo6.avif?v=1792944549',
     label: 'Made In A USA FDA-Registered Facility',
   },
 ];

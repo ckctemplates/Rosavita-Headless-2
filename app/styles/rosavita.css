@@ -820,6 +820,11 @@
 
 .rv-tabs__panel {
   margin-top: 40px;
+  min-height: 520px;
+}
+
+.rv-tabs__panel[hidden] {
+  display: none !important;
 }
 
 .rv-tabs__row {
@@ -879,10 +884,12 @@
   color: var(--rv-forest);
 }
 
-.rv-tab-card__icon svg {
+.rv-tab-card__icon svg,
+.rv-tab-card__icon img {
   display: block;
   width: 100%;
   height: 100%;
+  object-fit: contain;
 }
 
 .rv-tab-card__title {

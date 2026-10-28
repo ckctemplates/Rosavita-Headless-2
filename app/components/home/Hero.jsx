@@ -53,17 +53,16 @@ export function Hero() {
 
           <div className="rv-hero__copy">
             <p>
-              Rosabella makes single-ingredient supplements from two
-              time-tested plants: organic beetroot for circulation support and
-              moringa for daily nutrition. Clearly labeled doses, third-party
-              testing on every batch, and more than 4,000 verified customer
-              reviews.
+              Rosavita makes single-ingredient supplements from two time-tested
+              plants: organic beetroot for circulation support and moringa for
+              daily nutrition. Clearly labeled doses, third-party testing on
+              every batch, and more than 4,000 verified customer reviews.
             </p>
           </div>
 
           <div className="rv-hero__cta">
             <Link
-              to="/collections/all"
+              to="/collections/best-sellers"
               className="rv-btn rv-btn--large rv-btn--block"
               prefetch="intent"
             >
@@ -78,11 +77,12 @@ export function Hero() {
 
         <div className="rv-hero__media">
           <img
-            src="/images/hero-banner.webp"
-            alt="Rosabella organic beetroot and moringa bottles"
+            src="https://cdn.shopify.com/s/files/1/0757/8822/2631/files/4_pairs_white.png?v=1792933328"
+            alt="Rosavita supplement bottles: Beetroot, Moringa, Electrolyte Powder and Moringa Gummies"
             width="765"
             height="788"
             loading="eager"
+            fetchPriority="high"
           />
         </div>
       </div>

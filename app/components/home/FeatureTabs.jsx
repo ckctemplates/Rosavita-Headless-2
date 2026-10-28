@@ -8,38 +8,52 @@ const tabs = [
   {id: 'gummies', label: 'MORINGA GUMMIES'},
 ];
 
+const TAB_HEADINGS = {
+  moringa: 'WHOLE-FOOD NUTRITION FROM ONE POWERFUL PLANT',
+  beetroot: 'WHOLE-FOOD SUPPORT FOR CIRCULATION, ENERGY & STAMINA',
+  electrolyte: 'DAILY ELECTROLYTE SUPPORT FOR HYDRATION, ENERGY & BALANCE',
+  gummies: 'WHOLE-FOOD SUPPORT FOR DAILY ENERGY, CALM & OVERALL WELLNESS',
+};
+
 const DEFAULT_LINKS = {
-  moringa: '/products/rosabella-moringa-powder-capsules-np',
-  beetroot:
-    '/products/rosabella-organic-beetroot-capsules-1300mg-for-blood-flow-heart-health-bogo-sub',
-  electrolyte: '/products/rosabella-electrolyte-drink-powder-b1',
-  gummies: '/products/rosabella-moringa-gummies-bogo-np',
+  moringa: '/products/rosavita-moringa-powder-capsules-np',
+  beetroot: '/products/beetroot',
+  electrolyte: '/products/rosavita-electrolyte-drink-powder-b1',
+  gummies: '/products/rosavita-moringa-gummies-sub',
 };
 
 const tabData = {
   moringa: {
     image: '/images/tab-moringa.webp',
-    imageAlt: 'Rosabella Moringa capsules',
+    imageAlt: 'Rosavita Moringa capsules',
     arrowColor: '#1f5c46',
-    ctaText: 'TRY ROSABELLA MORINGA >',
+    ctaText: 'Try Rosavita Moringa',
     cards: [
       {
-        icon: 'leaf',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg1.webp?v=1792945165',
         title: 'Traditional Whole-Food Nutrition',
         text: "Moringa oleifera has been used for centuries as a nutrient-dense plant, naturally containing vitamins, minerals, and antioxidants. It's one of the most well-known whole-food supplements in traditional wellness practices.*",
       },
       {
-        icon: 'shield',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg2.webp?v=1792945171',
         title: 'Quality You Can Trust',
         text: 'Made with 800mg of moringa leaf powder per serving with just one other ingredient — a vegetable cellulose capsule. Third-party tested for quality and manufactured in a GMP-certified facility.',
       },
       {
-        icon: 'clock',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg3.webp?v=1792945178',
         title: 'Convenient Daily Format',
         text: 'Two capsules a day with food — simple, clean, and easy to add to your morning routine. No powders, no mixing, no taste.',
       },
       {
-        icon: 'sparkle',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg4.webp?v=1792945184',
         title: 'Clean, Minimal Formula',
         text: 'No artificial fillers, no synthetic additives — just moringa leaf powder in a vegetable capsule. Vegan, gluten-free, and non-GMO.',
       },
@@ -47,27 +61,35 @@ const tabData = {
   },
   beetroot: {
     image: '/images/tab-beetroot.png',
-    imageAlt: 'Rosabella Beetroot capsules',
-    arrowColor: '#d94b9b',
-    ctaText: 'TRY BEETROOT >',
+    imageAlt: 'Rosavita Beetroot capsules',
+    arrowColor: '#1f5c46',
+    ctaText: 'Try Beetroot',
     cards: [
       {
-        icon: 'leaf',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg5.png?v=1792945190',
         title: 'Traditional Whole Food',
         text: 'Beetroot has been valued for centuries as a nutritious vegetable, naturally containing dietary nitrates and other plant compounds.',
       },
       {
-        icon: 'shield',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg6.png?v=1792945197',
         title: 'Quality You Can Trust',
         text: 'Made with 1300mg of beetroot powder per serving, third-party tested for quality and manufactured in certified facilities.',
       },
       {
-        icon: 'clock',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg7.png?v=1792945204',
         title: 'Convenient Daily Format',
         text: 'Easy-to-take capsules provide consistent beetroot nutrition without the mess of powders or time-consuming juicing preparation.',
       },
       {
-        icon: 'sparkle',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg8.avif?v=1792945210',
         title: 'Natural Plant Nutrition',
         text: 'Beetroot with no artificial colors or synthetic binders - just quality plant-based nutrition.',
       },
@@ -75,27 +97,35 @@ const tabData = {
   },
   electrolyte: {
     image: '/images/tab-electrolyte.webp',
-    imageAlt: 'Rosabella Electrolyte drink powder',
-    arrowColor: '#c81f3c',
-    ctaText: 'TRY ELECTROLYTE POWDER >',
+    imageAlt: 'Rosavita Electrolyte drink powder',
+    arrowColor: '#1f5c46',
+    ctaText: 'Try ELECTROLYTE POWDER',
     cards: [
       {
-        icon: 'drop',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg9.webp?v=1792945216',
         title: 'Everyday Hydration Support',
         text: 'Staying hydrated is about more than just water. Electrolytes play a key role in how your body absorbs and retains fluids throughout the day.*',
       },
       {
-        icon: 'shield',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg10.webp?v=1792945222',
         title: 'Quality You Can Trust',
         text: 'Made with 8 key nutrients including Himalayan Pink Salt, Magnesium, Potassium, and Vitamin B12 — third-party tested for quality and manufactured in certified facilities.',
       },
       {
-        icon: 'clock',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg11.webp?v=1792945230',
         title: 'Convenient Daily Format',
         text: 'One scoop mixes into water in seconds. Simple daily hydration support without the sugar or calories of traditional sports drinks.',
       },
       {
-        icon: 'sparkle',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg12.png?v=1792945237',
         title: 'Balanced Mineral Nutrition',
         text: "A thoughtful blend of essential electrolytes and vitamins including Vitamin C, Zinc, and Chromium — designed to support your body's daily hydration and energy needs.*",
       },
@@ -103,27 +133,35 @@ const tabData = {
   },
   gummies: {
     image: '/images/tab-gummies.png',
-    imageAlt: 'Rosabella Moringa Gummies',
+    imageAlt: 'Rosavita Moringa Gummies',
     arrowColor: '#1f5c46',
-    ctaText: 'TRY ROSABELLA GUMMIES >',
+    ctaText: 'Try Rosavita Gummies',
     cards: [
       {
-        icon: 'bolt',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg13.png?v=1792945242',
         title: 'Support Natural Energy',
         text: "Packed with magnesium, B vitamins, and iron, Moringa Gummies provide daily nutritional support for your body's natural energy needs — helping you feel more alert and energised throughout the day.*",
       },
       {
-        icon: 'brain',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg14.png?v=1792945248',
         title: 'Support Focus & Mental Clarity',
         text: 'Moringa is rich in antioxidants and nutrients that support cognitive function and a positive mood throughout the day.*',
       },
       {
-        icon: 'moon',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg15.jxl?v=1792945517',
         title: 'Support Calm & Restful Sleep',
         text: "Moringa contains natural compounds that support your body's stress response - helping promote relaxation and healthy sleep patterns over time.*",
       },
       {
-        icon: 'balance',
+        icon: 'image',
+        iconSrc:
+          'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/lg16.jxl?v=1792945522',
         title: 'Support Overall Balance',
         text: 'Packed with essential nutrients in whole-food form, our gummies support emotional balance and overall resilience - helping you feel more grounded day to day.*',
       },
@@ -131,7 +169,15 @@ const tabData = {
   },
 };
 
-function Icon({type}) {
+function Icon({type, src}) {
+  if (type === 'image' && src) {
+    return (
+      <span className="rv-tab-card__icon" aria-hidden="true">
+        <img src={src} alt="" width="35" height="35" loading="lazy" />
+      </span>
+    );
+  }
+
   const paths = {
     leaf: (
       <>
@@ -228,7 +274,7 @@ function TabCard({card}) {
   return (
     <div className="rv-tab-card">
       <div className="rv-tab-card__head">
-        <Icon type={card.icon} />
+        <Icon type={card.icon} src={card.iconSrc} />
         <h3 className="rv-tab-card__title">{card.title}</h3>
       </div>
       <p className="rv-tab-card__body">{card.text}</p>
@@ -237,10 +283,10 @@ function TabCard({card}) {
 }
 
 export function FeatureTabs({productLinks = {}}) {
+export function FeatureTabs({productLinks = {}}) {
   const [activeTab, setActiveTab] = useState('moringa');
   const tabRefs = useRef([]);
-  const data = tabData[activeTab];
-  const ctaLink = productLinks[activeTab] || DEFAULT_LINKS[activeTab];
+  const heading = TAB_HEADINGS[activeTab] || TAB_HEADINGS.moringa;
 
   const onTabKeyDown = (event, currentIndex) => {
     let nextIndex = null;
@@ -255,25 +301,39 @@ export function FeatureTabs({productLinks = {}}) {
       nextIndex = tabs.length - 1;
     }
 
-    if (nextIndex === null) return;
+    if (nextIndex === null) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        setActiveTab(tabs[currentIndex].id);
+        tabRefs.current[currentIndex]?.focus();
+      }
+      return;
+    }
 
     event.preventDefault();
     setActiveTab(tabs[nextIndex].id);
     tabRefs.current[nextIndex]?.focus();
+    // Scroll active tab into view on mobile
+    const container = tabRefs.current[nextIndex]?.parentElement;
+    if (container) {
+      tabRefs.current[nextIndex]?.scrollIntoView?.({
+        behavior: 'auto',
+        inline: 'center',
+        block: 'nearest',
+      });
+    }
   };
 
   return (
     <section className="rv-tabs">
       <div className="rv-container">
-        <h2 className="rv-tabs__title">
-          WHOLE-FOOD NUTRITION FROM ONE POWERFUL PLANT
-        </h2>
+        <h2 className="rv-tabs__title">{heading}</h2>
 
         <div className="rv-tabs__nav-wrap">
           <div
             className="rv-tabs__nav"
             role="tablist"
-            aria-label="Rosabella products"
+            aria-label="Rosavita products"
           >
             {tabs.map((tab, index) => (
               <button
@@ -288,7 +348,14 @@ export function FeatureTabs({productLinks = {}}) {
                 aria-selected={activeTab === tab.id}
                 aria-controls={`rv-panel-${tab.id}`}
                 tabIndex={activeTab === tab.id ? 0 : -1}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  tabRefs.current[index]?.scrollIntoView?.({
+                    behavior: 'auto',
+                    inline: 'center',
+                    block: 'nearest',
+                  });
+                }}
                 onKeyDown={(event) => onTabKeyDown(event, index)}
               >
                 {tab.label}
@@ -297,50 +364,60 @@ export function FeatureTabs({productLinks = {}}) {
           </div>
         </div>
 
-        <div
-          className="rv-tabs__panel"
-          id={`rv-panel-${activeTab}`}
-          role="tabpanel"
-          aria-labelledby={`rv-tab-${activeTab}`}
-          tabIndex={0}
-        >
-          <div className="rv-tabs__row">
-            <div className="rv-tabs__col">
-              {data.cards.slice(0, 2).map((card) => (
-                <TabCard card={card} key={card.title} />
-              ))}
-            </div>
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          const data = tabData[tab.id];
+          const ctaLink = productLinks[tab.id] || DEFAULT_LINKS[tab.id];
 
-            <div className="rv-tabs__center">
-              <Arrow variant="tl" color={data.arrowColor} />
-              <Arrow variant="bl" color={data.arrowColor} />
-              <Arrow variant="tr" color={data.arrowColor} />
-              <Arrow variant="br" color={data.arrowColor} />
-              <img
-                className={`rv-tabs__image${
-                  activeTab === 'electrolyte' ? ' rv-tabs__image--boxed' : ''
-                }`}
-                src={data.image}
-                alt={data.imageAlt}
-                width="1183"
-                height="740"
-                loading="lazy"
-              />
-            </div>
+          return (
+            <div
+              key={tab.id}
+              className="rv-tabs__panel"
+              id={`rv-panel-${tab.id}`}
+              role="tabpanel"
+              aria-labelledby={`rv-tab-${tab.id}`}
+              tabIndex={isActive ? 0 : -1}
+              hidden={!isActive}
+            >
+              <div className="rv-tabs__row">
+                <div className="rv-tabs__col">
+                  {data.cards.slice(0, 2).map((card) => (
+                    <TabCard card={card} key={`${tab.id}-${card.title}`} />
+                  ))}
+                </div>
 
-            <div className="rv-tabs__col">
-              {data.cards.slice(2, 4).map((card) => (
-                <TabCard card={card} key={card.title} />
-              ))}
-            </div>
-          </div>
+                <div className="rv-tabs__center">
+                  <Arrow variant="tl" color={data.arrowColor} />
+                  <Arrow variant="bl" color={data.arrowColor} />
+                  <Arrow variant="tr" color={data.arrowColor} />
+                  <Arrow variant="br" color={data.arrowColor} />
+                  <img
+                    className={`rv-tabs__image${
+                      tab.id === 'electrolyte' ? ' rv-tabs__image--boxed' : ''
+                    }`}
+                    src={data.image}
+                    alt={data.imageAlt}
+                    width="1183"
+                    height="740"
+                    loading="lazy"
+                  />
+                </div>
 
-          <div className="rv-tabs__cta">
-            <Link to={ctaLink} className="rv-btn rv-btn--large" prefetch="intent">
-              {data.ctaText}
-            </Link>
-          </div>
-        </div>
+                <div className="rv-tabs__col">
+                  {data.cards.slice(2, 4).map((card) => (
+                    <TabCard card={card} key={`${tab.id}-${card.title}`} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="rv-tabs__cta">
+                <Link to={ctaLink} className="rv-btn rv-btn--large" prefetch="intent">
+                  {data.ctaText}
+                </Link>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
