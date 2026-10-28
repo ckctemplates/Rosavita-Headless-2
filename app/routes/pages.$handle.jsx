@@ -2,6 +2,7 @@ import {useLoaderData} from 'react-router';
 import {PageContent} from '~/components/PageContent';
 import {createPageDescription, preparePageHtml} from '~/lib/prepare-page-html';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import {POLICY_FALLBACK_CONTENT} from '~/content/policies';
 
 /**
  * @type {Route.MetaFunction}
@@ -46,39 +47,77 @@ export async function loader(args) {
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  * @param {Route.LoaderArgs}
  */
+const POLICY_PAGE_TITLES = {
+  'privacy-policy': 'Privacy policy',
+  'terms-of-service': 'Terms of service',
+  'refund-policy': 'Refund policy',
+};
+
 async function loadCriticalData({context, request, params}) {
   if (!params.handle) {
     throw new Error('Missing page handle');
   }
 
-  const [{page}] = await Promise.all([
-    context.storefront.query(PAGE_QUERY, {
+  let page = null;
+
+  try {
+    const result = await context.storefront.query(PAGE_QUERY, {
       variables: {
         handle: params.handle,
         language: context.storefront.i18n?.language,
         country: context.storefront.i18n?.country,
       },
       cache: context.storefront.CacheLong(),
-    }),
-    // Add other queries here, so that they are loaded in parallel
-  ]);
+    });
+    page = result?.page ?? null;
+  } catch (error) {
+    // Surface the real reason (e.g. a missing unauthenticated_read_content
+    // scope) instead of silently rendering a 404.
+    console.warn(
+      `[pages.$handle] Could not load page "${params.handle}": ${error?.message || error}`,
+    );
+  }
 
-  if (!page) {
+  const fallback = POLICY_FALLBACK_CONTENT[params.handle];
+
+  if (!page && !fallback) {
     throw new Response('Not Found', {status: 404});
   }
 
-  redirectIfHandleIsLocalized(request, {handle: params.handle, data: page});
+  if (page) {
+    redirectIfHandleIsLocalized(request, {handle: params.handle, data: page});
+  }
 
-  const {body, ...pageData} = page;
-  const contentHtml = preparePageHtml(body, {
+  const shopifyBody = typeof page?.body === 'string' ? page.body : '';
+  const hasShopifyBody = shopifyBody.trim().length > 0;
+  const bodyToRender = hasShopifyBody ? shopifyBody : fallback || '';
+
+  if (!hasShopifyBody && fallback) {
+    console.warn(
+      `[pages.$handle] Using fallback content for "${params.handle}": the Shopify page body is unavailable.`,
+    );
+  }
+
+  let contentHtml = preparePageHtml(bodyToRender, {
     storeDomain: context.env.PUBLIC_STORE_DOMAIN,
   });
 
+  if (!contentHtml.trim()) {
+    console.warn(
+      `[pages.$handle] No content available for "${params.handle}"; rendering the placeholder message.`,
+    );
+    contentHtml = '<p>This page is not available yet.</p>';
+  }
+
   return {
-    page: pageData,
+    page: {
+      handle: page?.handle ?? params.handle,
+      title: page?.title?.trim() || POLICY_PAGE_TITLES[params.handle] || 'Page',
+      seo: page?.seo ?? null,
+    },
     contentHtml,
     description:
-      page.seo?.description?.trim() || createPageDescription(body),
+      page?.seo?.description?.trim() || createPageDescription(bodyToRender),
   };
 }
 
