@@ -47,19 +47,52 @@ const HTML_ENTITY_MAP = {
 export function preparePageHtml(html, options = {}) {
   if (!html) return '';
 
+  const input = String(html);
   const ownDomains = new Set(OWN_DOMAINS);
   const storeDomain = normalizeHost(options.storeDomain);
   if (storeDomain) ownDomains.add(storeDomain);
 
-  let prepared = String(html);
+  let prepared = input;
   prepared = stripDangerousElements(prepared);
   prepared = prepared.replace(/<(\/?)h1(\s[^>]*)?>/gi, '<$1h2$2>');
-  prepared = prepared.replace(/<[^>]*>/g, (tag) =>
-    sanitizeTag(tag, ownDomains),
-  );
+  prepared = prepared.replace(/<[^>]*>/g, (tag) => sanitizeTag(tag, ownDomains));
   prepared = wrapTables(prepared);
+  prepared = prepared.trim();
 
-  return prepared.trim();
+  if (prepared.length === 0 && input.trim().length > 0) {
+    console.warn('[preparePageHtml] output empty, falling back to raw sanitized input');
+    prepared = sanitizeRawBodyFallback(input).trim();
+  }
+
+  return prepared;
+}
+
+/** @param {string} html */
+function sanitizeRawBodyFallback(html) {
+  let output = String(html);
+  output = output.replace(
+    /<(script|style|object)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,
+    '',
+  );
+  output = output.replace(/<(script|style|object)\b[^>]*\/?>/gi, '');
+  output = output.replace(/<embed\b[^>]*\/?>/gi, '');
+  output = output.replace(
+    /<iframe\b[^>]*>[\s\S]*?<\/iframe\s*>|<iframe\b[^>]*\/?>/gi,
+    (tag) => {
+      const src = tag.match(/\ssrc\s*=\s*(['"])([\s\S]*?)\1/i)?.[2];
+      if (!src) return '';
+      const s = src.trim().toLowerCase();
+      if (s.includes('youtube') || s.includes('youtu.be') || s.includes('vimeo')) {
+        return tag.replace(/\son[a-z0-9_:-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+)/gi, '');
+      }
+      return '';
+    },
+  );
+  output = output.replace(/<(\/?)h1(\s|>)/gi, '<$1h2$2');
+  output = output.replace(/\son[a-z0-9_:-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+)/gi, '');
+  output = output.replace(/href\s*=\s*(['"])javascript:[^'"]*\1/gi, 'href="#"');
+  output = output.replace(/src\s*=\s*(['"])javascript:[^'"]*\1/gi, '');
+  return output;
 }
 
 /**
