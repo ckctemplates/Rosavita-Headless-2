@@ -13,24 +13,38 @@ const COLLECTION_HANDLE = 'best-sellers';
 const PRODUCT_LINKS = [
   {
     key: 'moringa',
-    match: ['rosabella-moringa-powder-capsules-np', 'moringa-powder'],
-    fallback: '/products/rosabella-moringa-powder-capsules-np',
+    match: [
+      'rosavita-moringa-powder-capsules-np',
+      'rosabella-moringa-powder-capsules-np',
+      'moringa-powder',
+    ],
+    fallback: '/products/rosavita-moringa-powder-capsules-np',
   },
   {
     key: 'beetroot',
     match: ['organic-beetroot-capsules', 'beetroot'],
-    fallback:
-      '/products/beetroot',
+    fallback: '/products/beetroot',
   },
   {
     key: 'electrolyte',
-    match: ['electrolyte-drink-powder', 'electrolyte'],
-    fallback: '/products/rosabella-electrolyte-drink-powder-b1',
+    match: [
+      'rosavita-electrolyte-drink-powder-b1',
+      'rosabella-electrolyte-drink-powder-b1',
+      'electrolyte-drink-powder',
+      'electrolyte',
+    ],
+    fallback: '/products/rosavita-electrolyte-drink-powder-b1',
   },
   {
     key: 'gummies',
-    match: ['moringa-gummies', 'gummies'],
-    fallback: '/products/rosabella-moringa-gummies-bogo-np',
+    match: [
+      'rosavita-moringa-gummies-sub',
+      'rosavita-moringa-gummies-bogo-np',
+      'rosabella-moringa-gummies-bogo-np',
+      'moringa-gummies',
+      'gummies',
+    ],
+    fallback: '/products/rosavita-moringa-gummies-sub',
   },
 ];
 
@@ -43,7 +57,7 @@ export const meta = () => {
     {
       name: 'description',
       content:
-        'Rosabella makes single-ingredient supplements from two time-tested plants: organic beetroot for circulation support and moringa for daily nutrition.',
+        'Rosavita makes single-ingredient supplements from two time-tested plants: organic beetroot for circulation support and moringa for daily nutrition.',
     },
   ];
 };
@@ -129,16 +143,16 @@ export default function Homepage() {
 
       <div className="rv-splits">
         <SplitFeature
-          title="WHY PEOPLE START WITH THE BEETROOT"
+          title="Why people start with the beetroot"
           description="Beetroot's natural dietary nitrates convert to nitric oxide in your body, supporting normal blood flow. Two capsules make one serving, and that serving is 1,300 mg of organic beetroot powder. You'll find the same number on the label."
-          image="/images/beetroot-bottle.webp"
-          imageAlt="Rosabella organic beetroot capsules bottle"
+          image="https://cdn.shopify.com/s/files/1/0757/8822/2631/files/12.webp?v=1792938267"
+          imageAlt="Rosavita Organic Beetroot Capsules bottle, 1,300 mg per serving"
         />
         <SplitFeature
-          title="AND WHY THEY STAY FOR THE MORINGA"
+          title="And why they stay for the moringa"
           description="Moringa leaf packs vitamin A, iron, calcium, and plant protein into a single plant. Choose capsules, gummies, or pure powder, whichever fits your routine best."
-          image="/images/moringa-bottle.webp"
-          imageAlt="Rosabella organic moringa capsules bottle"
+          image="https://cdn.shopify.com/s/files/1/0757/8822/2631/files/123.webp?v=1792938222"
+          imageAlt="Rosavita Moringa Capsules bottle, organic moringa leaf powder"
           reversed
         />
         <TestedBox />

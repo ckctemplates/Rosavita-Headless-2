@@ -127,11 +127,11 @@ export function RosavitaHeader({cart}) {
             Rosavita
           </NavLink>
           <nav className="rv-header__nav" aria-label="Main navigation">
-            <NavLink to="/collections/all" prefetch="intent">
+            <NavLink to="/" prefetch="intent">
               Shop Rosavita
             </NavLink>
-            <NavLink to="/pages/faq" prefetch="intent">
-              FAQ
+            <NavLink to="/products/beetroot" prefetch="intent">
+              Beetroot
             </NavLink>
           </nav>
         </div>

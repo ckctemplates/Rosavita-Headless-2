@@ -2,44 +2,44 @@ import {useState} from 'react';
 
 const faqs = [
   {
-    question: 'What products does Rosabella offer?',
+    question: 'What products does Rosavita offer?',
     answer:
-      'Rosabella offers organic beetroot capsules and moringa supplements in various forms including capsules, gummies, and powders.',
+      'Rosavita offers a range of whole-food wellness supplements including Organic Beetroot Capsules for circulation and stamina support, Moringa Capsules and Gummies for daily nutritional support, and Fast Hydration Electrolyte Powder for everyday hydration. All products are manufactured in a GMP-certified facility in the USA.*',
   },
   {
-    question: 'What ingredients are in Rosabella products?',
+    question: 'What ingredients are in Rosavita products?',
     answer:
-      'Our products contain single-ingredient formulas with organic beetroot or moringa leaf as the primary ingredient, with minimal additional ingredients as needed for capsule or powder formulation.',
+      'Every Rosavita product is built around whole-food ingredients with minimal excipients. Full ingredient lists and Supplement Facts panels are available on each product page. We believe in transparency — what you see on the label is what you get.',
   },
   {
-    question: 'Where can I buy Rosabella?',
+    question: 'Where can I buy Rosavita?',
     answer:
-      'Rosabella products are available for purchase on our official website and select retail partners.',
+      'Rosavita products are available on our website and on Amazon.',
   },
   {
-    question: 'Is Rosabella safe to take with my current medications?',
+    question: 'Is Rosavita safe to take with my current medications?',
     answer:
-      'Please consult your healthcare provider before taking any supplement if you are on medication or have existing health conditions.',
+      'We recommend consulting your healthcare provider before starting any new supplement, particularly if you are taking medication, pregnant, breastfeeding, or have a known medical condition.',
   },
   {
-    question: 'How should I store Rosabella products?',
+    question: 'How should I store Rosavita products?',
     answer:
-      'Store in a cool, dry place away from direct sunlight. Keep containers tightly sealed.',
+      'Store all products in a cool, dry place, away from direct sunlight and moisture, to maintain freshness and shelf life.',
   },
   {
-    question: 'How often should I take Rosabella supplements?',
+    question: 'How often should I take Rosavita supplements?',
     answer:
-      'Follow the recommended dosage on the product label. Typically 1-2 servings per day as directed.',
+      'Suggested use varies by product — check the label on your specific product for directions. All of our supplements are designed for consistent daily use.',
   },
   {
     question: 'How many servings are in each container?',
     answer:
-      'Each container contains the number of servings as indicated on the label - typically 30 days of use.',
+      "All Rosavita products contain approximately 30 servings per container, providing a full month's supply when taken as directed.",
   },
   {
     question: "What if I'm not satisfied?",
     answer:
-      'Every order is covered by our 90-day money-back guarantee. Contact our customer service team for assistance.',
+      "Rosavita offers a 90-day satisfaction guarantee across all products. If you're not completely satisfied for any reason, simply return the product within 90 days of delivery and we'll refund your purchase price. Return shipping is the customer's responsibility. Email <a href=\"mailto:help@tryrosavita.com\">help@tryrosavita.com</a> to initiate the return process.",
   },
 ];
 
@@ -98,7 +98,10 @@ export function FaqAccordion() {
                     aria-hidden={!isOpen}
                   >
                     <div>
-                      <p className="rv-faq__answer">{faq.answer}</p>
+                      <div
+                className="rv-faq__answer"
+                dangerouslySetInnerHTML={{__html: faq.answer}}
+              />
                     </div>
                   </div>
                 </div>
