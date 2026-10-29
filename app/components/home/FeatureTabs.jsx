@@ -24,8 +24,9 @@ const DEFAULT_LINKS = {
 
 const tabData = {
   moringa: {
-    image: '/images/tab-moringa.webp',
-    imageAlt: 'Rosavita Moringa capsules',
+    image:
+      'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/line11_ac9ef3f3-6b4d-4d6f-817e-145c68790435.jpg?v=1792935996',
+    imageAlt: 'Rosavita Moringa Pure capsules bottle with benefit arrows',
     arrowColor: '#1f5c46',
     ctaText: 'Try Rosavita Moringa',
     cards: [
@@ -60,8 +61,9 @@ const tabData = {
     ],
   },
   beetroot: {
-    image: '/images/tab-beetroot.png',
-    imageAlt: 'Rosavita Beetroot capsules',
+    image:
+      'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/line22.jpg?v=1792936453',
+    imageAlt: 'Rosavita Beetroot capsules bottle with benefit arrows',
     arrowColor: '#1f5c46',
     ctaText: 'Try Beetroot',
     cards: [
@@ -96,8 +98,9 @@ const tabData = {
     ],
   },
   electrolyte: {
-    image: '/images/tab-electrolyte.webp',
-    imageAlt: 'Rosavita Electrolyte drink powder',
+    image:
+      'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/line33.jpg?v=1792936929',
+    imageAlt: 'Rosavita Electrolyte Powder bottle with benefit arrows',
     arrowColor: '#1f5c46',
     ctaText: 'Try ELECTROLYTE POWDER',
     cards: [
@@ -132,10 +135,11 @@ const tabData = {
     ],
   },
   gummies: {
-    image: '/images/tab-gummies.png',
-    imageAlt: 'Rosavita Moringa Gummies',
+    image:
+      'https://cdn.shopify.com/s/files/1/0757/8822/2631/files/line44.jpg?v=1792936964',
+    imageAlt: 'Rosavita Moringa Gummies bottle with benefit arrows',
     arrowColor: '#1f5c46',
-    ctaText: 'Try Rosavita Gummies',
+    ctaText: 'TRY ROSAVITA GUMMIES',
     cards: [
       {
         icon: 'image',
@@ -283,7 +287,6 @@ function TabCard({card}) {
 }
 
 export function FeatureTabs({productLinks = {}}) {
-export function FeatureTabs({productLinks = {}}) {
   const [activeTab, setActiveTab] = useState('moringa');
   const tabRefs = useRef([]);
   const heading = TAB_HEADINGS[activeTab] || TAB_HEADINGS.moringa;
@@ -387,14 +390,8 @@ export function FeatureTabs({productLinks = {}}) {
                 </div>
 
                 <div className="rv-tabs__center">
-                  <Arrow variant="tl" color={data.arrowColor} />
-                  <Arrow variant="bl" color={data.arrowColor} />
-                  <Arrow variant="tr" color={data.arrowColor} />
-                  <Arrow variant="br" color={data.arrowColor} />
                   <img
-                    className={`rv-tabs__image${
-                      tab.id === 'electrolyte' ? ' rv-tabs__image--boxed' : ''
-                    }`}
+                    className="rv-tabs__image rv-tabs__image--center"
                     src={data.image}
                     alt={data.imageAlt}
                     width="1183"

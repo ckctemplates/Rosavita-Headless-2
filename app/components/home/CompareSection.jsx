@@ -58,7 +58,7 @@ export function CompareSection() {
         </h2>
 
         <div className="rv-compare__wrapper">
-          <div className="rv-compare__card rv-compare__card--rosabella">
+          <div className="rv-compare__card rv-compare__card--rosavita">
             <div className="rv-compare__inner">
               <img
                 className="rv-compare__logo"

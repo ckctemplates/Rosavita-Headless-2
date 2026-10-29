@@ -15,7 +15,7 @@ const PRODUCT_LINKS = [
     key: 'moringa',
     match: [
       'rosavita-moringa-powder-capsules-np',
-      'rosabella-moringa-powder-capsules-np',
+      'rosavita-moringa-powder-capsules',
       'moringa-powder',
     ],
     fallback: '/products/rosavita-moringa-powder-capsules-np',
@@ -29,7 +29,6 @@ const PRODUCT_LINKS = [
     key: 'electrolyte',
     match: [
       'rosavita-electrolyte-drink-powder-b1',
-      'rosabella-electrolyte-drink-powder-b1',
       'electrolyte-drink-powder',
       'electrolyte',
     ],
@@ -40,7 +39,6 @@ const PRODUCT_LINKS = [
     match: [
       'rosavita-moringa-gummies-sub',
       'rosavita-moringa-gummies-bogo-np',
-      'rosabella-moringa-gummies-bogo-np',
       'moringa-gummies',
       'gummies',
     ],
@@ -53,11 +51,10 @@ const PRODUCT_LINKS = [
  */
 export const meta = () => {
   return [
-    {title: 'Rosavita | Organic Beetroot and Moringa'},
+    {title: 'Rosavita: Beetroot and Turmeric Supplements'},
     {
       name: 'description',
-      content:
-        'Rosavita makes single-ingredient supplements from two time-tested plants: organic beetroot for circulation support and moringa for daily nutrition.',
+      content: 'Rosavita',
     },
   ];
 };

@@ -31,7 +31,7 @@ const REQUIRED_PRODUCTS = [
   {
     key: 'gummies',
     title: 'MORINGA GUMMIES',
-    handle: 'rosavita-moringa-gummies-sub',
+    handle: 'rosavita-moringa-gummies-bogo-np',
     match: ['gumm'],
     tags: ['30 DAY SUPPLY', '60 CAPSULES'],
     subtitle: 'Your Daily Green Superfood',
