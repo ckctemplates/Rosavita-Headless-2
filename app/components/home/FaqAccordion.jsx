@@ -1,6 +1,6 @@
 import {useState} from 'react';
 
-const faqs = [
+const FAQ_ITEMS = [
   {
     question: 'What products does Rosavita offer?',
     answer:
@@ -38,8 +38,16 @@ const faqs = [
   },
   {
     question: "What if I'm not satisfied?",
-    answer:
-      "Rosavita offers a 90-day satisfaction guarantee across all products. If you're not completely satisfied for any reason, simply return the product within 90 days of delivery and we'll refund your purchase price. Return shipping is the customer's responsibility. Email <a href=\"mailto:help@tryrosavita.com\">help@tryrosavita.com</a> to initiate the return process.",
+    answer: (
+      <>
+        Rosavita offers a 90-day satisfaction guarantee across all products. If
+        you're not completely satisfied for any reason, simply return the product
+        within 90 days of delivery and we'll refund your purchase price. Return
+        shipping is the customer's responsibility. Email{' '}
+        <a href="mailto:help@tryrosavita.com">help@tryrosavita.com</a> to
+        initiate the return process.
+      </>
+    ),
   },
 ];
 
@@ -61,7 +69,7 @@ function ChevronIcon() {
 }
 
 export function FaqAccordion() {
-  const [openIndex, setOpenIndex] = useState(0);
+  const [openIndex, setOpenIndex] = useState(null);
 
   return (
     <section className="rv-faq">
@@ -70,38 +78,36 @@ export function FaqAccordion() {
           <h2 className="rv-faq__title">FAQs</h2>
 
           <div>
-            {faqs.map((faq, index) => {
+            {FAQ_ITEMS.map((faq, index) => {
               const isOpen = openIndex === index;
+              const panelId = `rv-faq-panel-${index}`;
+              const triggerId = `rv-faq-trigger-${index}`;
 
               return (
-                <div
-                  className="rv-faq__item"
-                  key={faq.question}
-                  data-open={isOpen}
-                >
+                <div className="rv-faq__item" key={faq.question} data-open={isOpen}>
                   <button
-                    type="button"
                     className="rv-faq__trigger"
+                    type="button"
+                    onClick={() =>
+                      setOpenIndex((current) => (current === index ? null : index))
+                    }
                     aria-expanded={isOpen}
-                    aria-controls={`rv-faq-panel-${index}`}
-                    id={`rv-faq-trigger-${index}`}
-                    onClick={() => setOpenIndex(isOpen ? null : index)}
+                    aria-controls={panelId}
+                    id={triggerId}
                   >
                     <span className="rv-faq__question">{faq.question}</span>
                     <ChevronIcon />
                   </button>
                   <div
                     className="rv-faq__panel"
-                    id={`rv-faq-panel-${index}`}
+                    id={panelId}
                     role="region"
-                    aria-labelledby={`rv-faq-trigger-${index}`}
+                    aria-labelledby={triggerId}
                     aria-hidden={!isOpen}
+                    hidden={!isOpen}
                   >
                     <div>
-                      <div
-                className="rv-faq__answer"
-                dangerouslySetInnerHTML={{__html: faq.answer}}
-              />
+                      <div className="rv-faq__answer">{faq.answer}</div>
                     </div>
                   </div>
                 </div>

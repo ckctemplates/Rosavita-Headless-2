@@ -65,40 +65,35 @@ function ArrowRightIcon() {
   );
 }
 
-const supportLinks = [
+const SOCIAL_LINKS = [
+  {href: 'https://www.instagram.com/', label: 'Instagram', Icon: InstagramIcon},
+  {href: 'https://www.facebook.com/', label: 'Facebook', Icon: FacebookIcon},
+  {href: 'https://www.tiktok.com/', label: 'TikTok', Icon: TikTokIcon},
+];
+
+const SUPPORT_LINKS = [
   {label: 'Search', to: '/search'},
   {label: 'Contact Us', to: '/pages/contact'},
   {label: 'Privacy Policy', to: '/pages/privacy-policy'},
   {label: 'Terms of Service', to: '/pages/terms-of-service'},
   {label: 'Refund Policy', to: '/pages/refund-policy'},
-  {label: 'Manage Subscription', to: '/pages/manage-subscription'},
-  {
-    label: 'Do Not Sell or Share My Personal Information',
-    to: '/pages/do-not-sell',
-  },
-  {label: 'Track Your Order', to: '/pages/track-order'},
+  {label: 'Manage Subscription', to: '/account'},
 ];
 
-const exploreLinks = [
-  {label: 'Reviews', to: '/pages/reviews'},
-  {label: 'Our Story', to: '/pages/our-story'},
-  {label: 'How Rosavita Works', to: '/pages/how-rosavita-works'},
-  {label: 'Beetroot Benefits', to: '/pages/beetroot-benefits'},
-  {label: 'Moringa Benefits', to: '/pages/moringa-benefits'},
-  {label: 'Beetroot', to: '/collections/beetroot'},
-  {label: 'Moringa', to: '/collections/moringa'},
-  {label: 'Where to Buy', to: '/pages/where-to-buy'},
-  {label: 'The Rosavita Journal', to: '/blogs/journal'},
+const EXPLORE_LINKS = [
+  {label: 'Best Sellers', to: '/collections/best-sellers'},
+  {label: 'Beetroot', to: '/products/beetroot'},
+  {label: 'Contact', to: '/pages/contact'},
 ];
 
 export function RosavitaFooter() {
   return (
     <footer className="rv-footer">
-      <div className="rv-footer__grid">
+      <div className="rv-footer__grid rv-footer__grid--narrow">
         <div>
-          <h4 className="rv-footer__heading">Support</h4>
+          <h4 className="rv-footer__heading">SUPPORT</h4>
           <ul className="rv-footer__list">
-            {supportLinks.map((link) => (
+            {SUPPORT_LINKS.map((link) => (
               <li key={link.to}>
                 <Link to={link.to} prefetch="intent">
                   {link.label}
@@ -109,9 +104,9 @@ export function RosavitaFooter() {
         </div>
 
         <div>
-          <h4 className="rv-footer__heading">Explore Rosavita</h4>
+          <h4 className="rv-footer__heading">EXPLORE ROSAVITA</h4>
           <ul className="rv-footer__list">
-            {exploreLinks.map((link) => (
+            {EXPLORE_LINKS.map((link) => (
               <li key={link.to}>
                 <Link to={link.to} prefetch="intent">
                   {link.label}
@@ -122,10 +117,10 @@ export function RosavitaFooter() {
         </div>
 
         <div>
-          <h4 className="rv-footer__heading">Sign Up and Save</h4>
+          <h4 className="rv-footer__heading">SIGN UP AND SAVE</h4>
           <p className="rv-footer__text">
-            Subscribe to get special offers, free giveaways, and
-            once-in-a-lifetime deals.
+            Subscribe to get special offers, free giveaways, and once-in-a-lifetime
+            deals.
           </p>
           <form
             className="rv-footer__form"
@@ -135,11 +130,7 @@ export function RosavitaFooter() {
           >
             <input type="hidden" name="form_type" value="customer" />
             <input type="hidden" name="utf8" value="✓" />
-            <input
-              type="hidden"
-              name="contact[tags]"
-              value="newsletter"
-            />
+            <input type="hidden" name="contact[tags]" value="newsletter" />
             <label htmlFor="RvFooterEmail" className="rv-sr-only">
               Email
             </label>
@@ -157,36 +148,13 @@ export function RosavitaFooter() {
           </form>
 
           <ul className="rv-footer__social">
-            <li>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram"
-              >
-                <InstagramIcon />
-              </a>
-            </li>
-            <li>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook"
-              >
-                <FacebookIcon />
-              </a>
-            </li>
-            <li>
-              <a
-                href="https://tiktok.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="TikTok"
-              >
-                <TikTokIcon />
-              </a>
-            </li>
+            {SOCIAL_LINKS.map(({href, label, Icon}) => (
+              <li key={label}>
+                <a href={href} target="_blank" rel="noopener noreferrer" aria-label={label}>
+                  <Icon />
+                </a>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
