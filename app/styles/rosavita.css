@@ -821,10 +821,17 @@
 .rv-tabs__panel {
   margin-top: 40px;
   min-height: 520px;
+  transition: opacity 150ms ease;
 }
 
 .rv-tabs__panel[hidden] {
   display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-tabs__panel {
+    transition: none;
+  }
 }
 
 .rv-tabs__row {
@@ -856,6 +863,11 @@
   max-width: 440px;
   height: auto;
   object-fit: contain;
+}
+
+.rv-tabs__image--center {
+  max-width: 520px;
+  mix-blend-mode: multiply;
 }
 
 .rv-tabs__image--boxed {
@@ -1067,7 +1079,7 @@
   border-radius: 15px;
 }
 
-.rv-compare__card--rosabella .rv-compare__inner {
+.rv-compare__card--rosavita .rv-compare__inner {
   border: 3px solid var(--rv-forest);
   background: #fff;
   box-shadow: 1px 1px 4px 0 rgba(44, 92, 76, 0.6);
@@ -1149,7 +1161,7 @@
     border-radius: 8px;
   }
 
-  .rv-compare__card--rosabella .rv-compare__inner {
+  .rv-compare__card--rosavita .rv-compare__inner {
     border-width: 2px;
   }
 
