@@ -722,6 +722,19 @@ export function getVariantAllocation(variant, preferredPlanName = DEFAULT_PLAN_N
  * @param {'subscribe' | 'once'} purchaseMode
  * @param {string} preferredPlanName
  */
+function getBundleCountForVariant(variant) {
+  if (!variant) return 1;
+  const source = `${variant.title || ''}`;
+  const match = source.match(/(\d+)\s*bottle/i);
+  if (match) {
+    const count = Number(match[1]);
+    if (Number.isFinite(count) && count > 0) {
+      return count;
+    }
+  }
+  return 1;
+}
+
 export function getVariantPricing(
   variant,
   purchaseMode,
