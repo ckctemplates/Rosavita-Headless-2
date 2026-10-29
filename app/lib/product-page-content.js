@@ -735,6 +735,19 @@ function getBundleCountForVariant(variant) {
   return 1;
 }
 
+function getBundleCountForVariantStrict(variant) {
+  if (!variant) return 1;
+  const source = `${variant.title || ''}`;
+  const match = source.match(/(\d+)\s*bottle/i);
+  if (match) {
+    const count = Number(match[1]);
+    if (Number.isFinite(count) && count > 0) {
+      return count;
+    }
+  }
+  return 1;
+}
+
 export function getVariantPricing(
   variant,
   purchaseMode,
@@ -748,17 +761,66 @@ export function getVariantPricing(
     adjustment?.price?.currencyCode ||
     adjustment?.compareAtPrice?.currencyCode ||
     variant?.compareAtPrice?.currencyCode ||
-    '';
+    'USD';
+
+  const productHandle = variant?.product?.handle || '';
+  const isBeetroot = productHandle === 'beetroot' || /beetroot/i.test(productHandle);
+
+  if (isBeetroot) {
+    const count = getBundleCountForVariantStrict(variant);
+    const oneTimeTotals = {
+      1: 20.9,
+      2: 41.8,
+      3: 62.7,
+    };
+    const subTotals = {
+      1: 18.81,
+      2: 33.44,
+      3: 43.89,
+    };
+    const subStrikes = {
+      1: 20.9,
+      2: 41.8,
+      3: 62.7,
+    };
+
+    if (purchaseMode === 'subscribe') {
+      const strike = subStrikes[count] ?? null;
+      const current = subTotals[count] ?? Number(adjustment?.price?.amount || oneTimeTotals[count] || 0);
+      const savingAmount = strike ? strike - current : 0;
+      const savingPercent = strike ? Math.round((savingAmount / strike) * 100) : 0;
+      return {
+        price: {amount: current.toFixed(2), currencyCode},
+        compareAt: strike ? {amount: strike.toFixed(2), currencyCode} : null,
+        savingAmount,
+        savingPercent,
+        allocation,
+        sellingPlan: allocation?.sellingPlan || null,
+      };
+    } else {
+      const current = oneTimeTotals[count] ?? Number(variant?.price?.amount || 0);
+      return {
+        price: {amount: current.toFixed(2), currencyCode},
+        compareAt: null,
+        savingAmount: 0,
+        savingPercent: 0,
+        allocation,
+        sellingPlan: allocation?.sellingPlan || null,
+      };
+    }
+  }
+
   const oneTime = Number(variant?.price?.amount || 0);
   const subscriptionPrice = Number(adjustment?.price?.amount);
-  const compareAt = Number(variant?.compareAtPrice?.amount || 0);
+  const compareAtVariant = Number(variant?.compareAtPrice?.amount || 0);
+  const compareAtAdjustment = Number(adjustment?.compareAtPrice?.amount || 0);
 
   const current =
     purchaseMode === 'subscribe' && Number.isFinite(subscriptionPrice)
       ? subscriptionPrice
       : oneTime;
 
-  const strikeCandidates = [oneTime, compareAt].filter(
+  const strikeCandidates = [oneTime, compareAtVariant, compareAtAdjustment].filter(
     (value) => Number.isFinite(value) && value > current,
   );
   const strike = strikeCandidates.length
