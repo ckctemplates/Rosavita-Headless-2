@@ -26,8 +26,25 @@ import {
 } from '~/lib/product-page-constants';
 import {
   formatFrequency,
+  getBundleContent,
   humanizeInterval,
 } from '~/lib/product-page-content';
+
+function getBundleQuantity(variant) {
+  if (!variant) return 1;
+  const bundle = getBundleContent(variant, 0);
+  const source = `${bundle?.title || ''} ${bundle?.subtitle || ''} ${
+    variant.title || ''
+  }`;
+  const match = source.match(/(\d+)\s*bottle/i);
+  if (match) {
+    const count = Number(match[1]);
+    if (Number.isFinite(count) && count > 0) {
+      return count;
+    }
+  }
+  return 1;
+}
 
 /**
  * The purchase controls under the product information.
@@ -213,10 +230,11 @@ function AddToCart({
   isAvailable,
   addToCartRef,
 }) {
+  const quantity = getBundleQuantity(selectedVariant);
   const lines = [
     {
       merchandiseId: selectedVariant.id,
-      quantity: 1,
+      quantity,
       ...(purchaseMode === 'subscribe' && pricing?.sellingPlan?.id
         ? {sellingPlanId: pricing.sellingPlan.id}
         : {}),
@@ -232,7 +250,7 @@ function AddToCart({
         vendor: product.vendor,
         variantId: selectedVariant.id,
         variantTitle: selectedVariant.title,
-        quantity: 1,
+        quantity,
       },
     ],
   };
