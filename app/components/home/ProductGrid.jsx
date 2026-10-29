@@ -101,7 +101,7 @@ export function ProductGrid({products}) {
     <section className="rv-products" id="shop-products">
       <div className="rv-container">
         <h2 className="rv-products__title">
-          SHOP ROSABELLA WELLNESS PRODUCTS
+          SHOP ROSAVITA WELLNESS PRODUCTS
         </h2>
 
         <div className="rv-products__grid">
